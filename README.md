@@ -1,1 +1,1 @@
-# hedera-claude-plugins
+# hedera-agent-skills
