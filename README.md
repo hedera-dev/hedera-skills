@@ -2,7 +2,19 @@
 
 A collection of skills for AI coding agents working with the Hedera network. Skills are packaged instructions, references, and examples that extend agent capabilities for Hedera development.
 
-Skills follow the [Agent Skills](https://agentskills.io/) format.
+## Installation
+
+**Claude Code:**
+```
+/plugin install hedera-dev/hedera-agent-skills
+```
+
+**Other agents** ([skills.sh](https://skills.sh) compatible):
+```bash
+npx skills add hedera-dev/hedera-agent-skills
+```
+
+Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
 
 ## Available Skills
 
@@ -65,34 +77,6 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `fees.md` - Fee structure information
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
-
-## Installation
-
-```bash
-npx add-skill hedera-dev/hedera-agent-skills
-```
-
-## Usage
-
-Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
-
-**Examples:**
-
-```
-Create a Hedera plugin that checks account balances
-```
-
-```
-Help me write a tool that creates fungible tokens
-```
-
-```
-How do I handle HTS response codes in my smart contract?
-```
-
-```
-What's the struct definition for HederaToken?
-```
 
 ## Skill Structure
 
