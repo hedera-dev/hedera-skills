@@ -4,12 +4,6 @@ A collection of skills for AI coding agents working with the Hedera network. Ski
 
 ## Installation
 
-**Claude Code:**
-```
-/plugin install hedera-dev/hedera-agent-skills
-```
-
-**Other agents** ([skills.sh](https://skills.sh) compatible):
 ```bash
 npx skills add hedera-dev/hedera-agent-skills
 ```

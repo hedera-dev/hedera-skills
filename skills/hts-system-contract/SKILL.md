@@ -1,5 +1,5 @@
 ---
-name: hedera-hts
+name: HTS System Contract Skill
 description: Hedera Token Service (HTS) smart contract development. Use when creating, managing, or interacting with Hedera-native tokens via Solidity contracts. Triggers include HTS tokens, Hedera token creation, HTS precompile, token minting/burning on Hedera, KYC/freeze/pause token controls, custom fee schedules, NFT collections on Hedera, or any token operations using the 0x167 precompile.
 ---
 
