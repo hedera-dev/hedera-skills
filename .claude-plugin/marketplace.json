@@ -1,0 +1,33 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hedera-agent-skills",
+  "description": "Official Hedera marketplace for Claude Code plugins - Agent Kit development, HTS system contracts, and blockchain tooling",
+  "owner": {
+    "name": "Hedera Dev",
+    "url": "https://hedera.com"
+  },
+  "plugins": [
+    {
+      "name": "agent-kit-plugin",
+      "description": "Comprehensive guide for creating custom plugins that extend the Hedera Agent Kit with new tools for network interactions",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/agent-kit-plugin",
+      "category": "development",
+      "keywords": ["hedera", "agent-kit", "plugin", "tools", "blockchain"]
+    },
+    {
+      "name": "hts-system-contract",
+      "description": "Technical reference for Hedera Token Service (HTS) system contract development in Solidity",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/hts-system-contract",
+      "category": "development",
+      "keywords": ["hedera", "hts", "tokens", "solidity", "smart-contracts"]
+    }
+  ]
+}

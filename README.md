@@ -1,8 +1,21 @@
 # Hedera Agent Skills
 
-A collection of skills for AI coding agents working with the Hedera network. Skills are packaged instructions, references, and examples that extend agent capabilities for Hedera development.
+A marketplace of plugins and skills for AI coding agents working with the Hedera network. Each plugin contains packaged instructions, references, and examples that extend agent capabilities for Hedera development.
 
 ## Installation
+
+### Claude Code
+
+```bash
+# Add the Hedera marketplace
+/plugin marketplace add hedera-dev/hedera-agent-skills
+
+# Install individual plugins
+/plugin marketplace add hedera-dev/hedera-agent-skills agent-kit-plugin
+/plugin marketplace add hedera-dev/hedera-agent-skills hts-system-contract
+```
+
+### Other Agents (npx skills)
 
 ```bash
 npx skills add hedera-dev/hedera-agent-skills
@@ -10,7 +23,7 @@ npx skills add hedera-dev/hedera-agent-skills
 
 Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
 
-## Available Skills
+## Available Plugins
 
 ### agent-kit-plugin
 
@@ -72,13 +85,32 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
 
-## Skill Structure
+## Marketplace Structure
 
-Each skill contains:
+```
+hedera-agent-skills/
+├── .claude-plugin/
+│   └── marketplace.json      # Marketplace manifest
+├── plugins/
+│   ├── agent-kit-plugin/     # Individual plugin
+│   │   └── skills/
+│   │       └── agent-kit-plugin/
+│   │           ├── SKILL.md
+│   │           ├── examples/
+│   │           └── references/
+│   └── hts-system-contract/
+│       └── skills/
+│           └── hts-system-contract/
+│               ├── SKILL.md
+│               └── references/
+└── README.md
+```
 
-- `SKILL.md` - Instructions for the agent
-- `references/` - Supporting documentation
-- `examples/` - Working code examples (optional)
+Each plugin contains:
+
+- `skills/<name>/SKILL.md` - Instructions for the agent
+- `skills/<name>/references/` - Supporting documentation
+- `skills/<name>/examples/` - Working code examples (optional)
 
 ## License
 
