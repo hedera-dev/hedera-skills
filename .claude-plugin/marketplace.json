@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "hedera-agent-skills",
+  "name": "hedera-skills",
   "description": "Official Hedera marketplace for Claude Code plugins - Agent Kit development, HTS system contracts, and blockchain tooling",
   "owner": {
     "name": "Hedera Dev",

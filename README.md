@@ -1,4 +1,4 @@
-# Hedera Agent Skills
+# Hedera Skills
 
 A marketplace of plugins and skills for AI coding agents working with the Hedera network. Each plugin contains packaged instructions, references, and examples that extend agent capabilities for Hedera development.
 
@@ -8,17 +8,17 @@ A marketplace of plugins and skills for AI coding agents working with the Hedera
 
 ```bash
 # Add the Hedera marketplace
-/plugin marketplace add hedera-dev/hedera-agent-skills
+/plugin marketplace add hedera-dev/hedera-skills
 
 # Install individual plugins
-/plugin marketplace add hedera-dev/hedera-agent-skills agent-kit-plugin
-/plugin marketplace add hedera-dev/hedera-agent-skills hts-system-contract
+/plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
+/plugin marketplace add hedera-dev/hedera-skills hts-system-contract
 ```
 
 ### Other Agents (npx skills)
 
 ```bash
-npx skills add hedera-dev/hedera-agent-skills
+npx skills add hedera-dev/hedera-skills
 ```
 
 Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
@@ -88,7 +88,7 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 ## Marketplace Structure
 
 ```
-hedera-agent-skills/
+hedera-skills/
 ├── .claude-plugin/
 │   └── marketplace.json      # Marketplace manifest
 ├── plugins/
