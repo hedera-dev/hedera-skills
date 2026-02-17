@@ -28,6 +28,17 @@
       "source": "./plugins/hts-system-contract",
       "category": "development",
       "keywords": ["hedera", "hts", "tokens", "solidity", "smart-contracts"]
+    },
+    {
+      "name": "hedera-solidity-guide",
+      "description": "Comprehensive Hedera smart contract development guide covering SDK integration, mirror node queries, token association, allowances, testing, and common pitfalls",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/hedera-solidity-guide",
+      "category": "development",
+      "keywords": ["hedera", "solidity", "sdk", "mirror-node", "smart-contracts", "testing", "ethers"]
     }
   ]
 }
