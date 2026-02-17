@@ -13,6 +13,7 @@ A marketplace of plugins and skills for AI coding agents working with the Hedera
 # Install individual plugins
 /plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
 /plugin marketplace add hedera-dev/hedera-skills hts-system-contract
+/plugin marketplace add hedera-dev/hedera-skills hedera-solidity-guide
 ```
 
 ### Other Agents (npx skills)
@@ -85,12 +86,78 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
 
+### hedera-solidity-guide
+
+Comprehensive development guide for Hedera smart contracts, covering the full stack from Solidity to JavaScript/TypeScript SDK integration. Captures patterns, nuances, and best practices learned from real-world Hedera projects.
+
+**Use when:**
+
+- Developing Hedera smart contracts in Solidity
+- Integrating with HTS tokens from JavaScript/TypeScript
+- Querying the Hedera mirror node
+- Setting token allowances (especially the storage contract pattern)
+- Writing Hardhat tests for Hedera contracts
+- Debugging Hedera-specific errors and edge cases
+
+**Topics covered:**
+
+- Critical differences from Ethereum development
+- Token association (the #1 Ethereum developer gotcha)
+- The storage contract allowance pattern
+- Mirror node architecture, endpoints, and propagation delays
+- Transaction ID format conversion (SDK vs mirror)
+- Client setup, environment config, and key type detection
+- Contract execution, deployment, and free mirror node reads
+- Gas estimation and HTS operation costs
+- Error handling (HTS response codes, custom errors, panic codes)
+- Testing patterns with Hedera-specific timeouts
+- Multi-signature transaction flows
+- Account and address format conversions
+
+**References included:**
+
+- `token-association.md` - Association patterns, auto-association, status checks
+- `allowances.md` - FT/NFT/HBAR allowances, storage contract pattern, isApproval flag
+- `mirror-node.md` - Query patterns, retry logic, event parsing, EVM address resolution
+- `contract-patterns.md` - Execution, deployment, ethers.js integration, error parsing
+- `client-setup.md` - Client initialization, environment config, key detection, address formats
+- `error-handling.md` - Error parsing, custom errors, HTS response codes
+- `testing.md` - Hardhat config, test setup, mirror node delays
+- `multi-sig.md` - Transaction validity, freezing, signature collection
+- `pitfalls.md` - The 8 most common Hedera development mistakes
+
+## Flashbacker Integration
+
+This repo also ships a [Flashbacker](https://github.com/agentsea/flashbacker) persona for Hedera Solidity development. Flashbacker is a memory and persona framework for Claude Code — personas shape how Claude approaches specific domains.
+
+### Installation
+
+Flashbacker must already be initialized in your project (`flashback init`). Then copy the persona:
+
+```bash
+# From the hedera-skills repo root
+cp extras/flashbacker/personas/hedera-solidity.md .claude/flashback/personas/
+```
+
+### Usage
+
+```bash
+# Activate the persona for a request
+/fb:persona hedera-solidity "Review my HTS token transfer logic"
+```
+
+The persona applies Hedera-first thinking — it checks for token association, correct allowance targets, HTS response codes, mirror node delays, and other Hedera-specific patterns that trip up Ethereum developers.
+
 ## Marketplace Structure
 
 ```
 hedera-skills/
 ├── .claude-plugin/
 │   └── marketplace.json      # Marketplace manifest
+├── extras/
+│   └── flashbacker/
+│       └── personas/
+│           └── hedera-solidity.md  # Flashbacker persona
 ├── plugins/
 │   ├── agent-kit-plugin/     # Individual plugin
 │   │   └── skills/
@@ -98,9 +165,14 @@ hedera-skills/
 │   │           ├── SKILL.md
 │   │           ├── examples/
 │   │           └── references/
-│   └── hts-system-contract/
+│   ├── hts-system-contract/
+│   │   └── skills/
+│   │       └── hts-system-contract/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   └── hedera-solidity-guide/
 │       └── skills/
-│           └── hts-system-contract/
+│           └── hedera-solidity-guide/
 │               ├── SKILL.md
 │               └── references/
 └── README.md

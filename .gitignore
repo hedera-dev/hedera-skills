@@ -1,1 +1,4 @@
 .DS_Store
+
+# Claude Code frameworks (exclude all)
+.claude/
