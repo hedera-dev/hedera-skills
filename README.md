@@ -13,6 +13,7 @@ A marketplace of plugins and skills for AI coding agents working with the Hedera
 # Install individual plugins
 /plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
 /plugin marketplace add hedera-dev/hedera-skills hts-system-contract
+/plugin marketplace add hedera-dev/hedera-skills hackathon-helper
 ```
 
 ### Other Agents (npx skills)
@@ -85,6 +86,32 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
 
+### hackathon-helper
+
+Two skills for Hedera hackathon participants: project planning and submission validation, both aligned to the official judging criteria. Compatible with any AI coding agent that supports skills (Claude Code, Codex, Gemini CLI, etc.).
+
+**Skills included:**
+
+- **hackathon-prd** - Interactive PRD generator. Asks participants to paste their bounty/track context, gathers project details, then generates a comprehensive PRD (`HACKATHON-PRD.md`) with a predicted score and improvement tips.
+- **validate-submission** - Codebase reviewer. Scans the repo for Hedera integration depth, code quality, and documentation, then produces a weighted scorecard against all 7 judging criteria with prioritized action items.
+
+**Use when:**
+
+- Starting a Hedera hackathon project and need a structured plan
+- Want to ensure your project addresses all judging criteria
+- Ready to validate your submission before the deadline
+- Need to identify quick wins to improve your hackathon score
+
+**Judging criteria covered:**
+
+- Innovation (10%) - Novelty in the Hedera ecosystem
+- Feasibility (10%) - Web3 necessity, business model, domain knowledge
+- Execution (20%) - MVP quality, code quality, UI/UX, strategy
+- Integration (15%) - Hedera service depth, ecosystem partners, creativity
+- Validation (15%) - Market feedback, early adopters, traction
+- Success (20%) - Hedera account growth, TPS impact, audience exposure
+- Pitch (10%) - Problem/solution clarity, metrics, Hedera representation
+
 ## Marketplace Structure
 
 ```
@@ -92,13 +119,21 @@ hedera-skills/
 ├── .claude-plugin/
 │   └── marketplace.json      # Marketplace manifest
 ├── plugins/
-│   ├── agent-kit-plugin/     # Individual plugin
+│   ├── agent-kit-plugin/     # Agent Kit plugin development
 │   │   └── skills/
 │   │       └── agent-kit-plugin/
 │   │           ├── SKILL.md
 │   │           ├── examples/
 │   │           └── references/
-│   └── hts-system-contract/
+│   ├── hackathon-helper/     # Hackathon PRD & validation
+│   │   └── skills/
+│   │       ├── hackathon-prd/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── validate-submission/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   └── hts-system-contract/  # HTS smart contract reference
 │       └── skills/
 │           └── hts-system-contract/
 │               ├── SKILL.md
