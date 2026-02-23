@@ -12,7 +12,7 @@ This skill provides guidance for creating custom plugins that extend the Hedera 
 
 To create a Hedera plugin in 5 steps:
 
-1. **Install dependencies**: Set up a TypeScript project with `hedera-agent-kit` and `@hashgraph/sdk`
+1. **Install dependencies**: Set up a TypeScript project with `hedera-agent-kit` and `@hiero-ledger/sdk`
 2. **Create plugin structure**: Create an `index.ts` with the plugin definition and a `tools/` directory
 3. **Define tools**: Create tool files with method, name, description, parameters, and execute function
 4. **Export properly**: Export the plugin object and tool name constants
@@ -217,7 +217,7 @@ import { handleTransaction, RawTransactionResponse } from 'hedera-agent-kit';
 import { transactionToolOutputParser, untypedQueryOutputParser } from 'hedera-agent-kit';
 
 // From Hedera SDK
-import { Client, Status } from '@hashgraph/sdk';
+import { Client, Status } from '@hiero-ledger/sdk';
 
 // For parameter validation
 import { z } from 'zod';

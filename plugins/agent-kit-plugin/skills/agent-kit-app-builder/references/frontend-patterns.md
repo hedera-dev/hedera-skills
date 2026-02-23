@@ -7,7 +7,7 @@ Implementation patterns for building polished Hedera-powered frontends with Reac
 - **Framework:** React 18+ or Next.js 14+ (App Router preferred)
 - **Language:** TypeScript always
 - **Styling:** Tailwind CSS + shadcn/ui for production-quality UI
-- **Hedera (server-side):** `hedera-agent-kit` for multi-step operations, `@hashgraph/sdk` for direct SDK access
+- **Hedera (server-side):** `hedera-agent-kit` for multi-step operations, `@hiero-ledger/sdk` for direct SDK access
 - **Hedera (read-heavy):** Mirror Node REST API for dashboard data
 - **State/Data:** React Server Components + API routes (no client-side private keys)
 
@@ -16,21 +16,23 @@ Implementation patterns for building polished Hedera-powered frontends with Reac
 When asked to build a Hedera app, follow this sequence:
 
 ```bash
-# 1. Create Next.js project
-npx create-next-app@latest my-hedera-app --typescript --tailwind --app --src-dir
+# 1. Create Next.js project (pipe "no" to decline React Compiler prompt)
+echo "no" | npx create-next-app@latest my-hedera-app --typescript --tailwind --app --src-dir --no-eslint --use-npm --import-alias "@/*"
 
 # 2. Install Hedera dependencies
 cd my-hedera-app
-npm install hedera-agent-kit @hashgraph/sdk dotenv
+npm install hedera-agent-kit @hiero-ledger/sdk dotenv
 
-# 3. Install UI components
-npx shadcn@latest init
-npx shadcn@latest add button card input dialog toast table badge tabs
+# 3. Install UI components (use --yes for non-interactive, sonner replaces deprecated toast)
+npx shadcn@latest init -d --force
+npx shadcn@latest add button card input dialog label sonner table badge tabs separator --yes
 
 # 4. Create .env.local
 cp templates/env.example .env.local
-# Fill in HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY, HEDERA_NETWORK
+# Fill in HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY, HEDERA_NETWORK, NEXT_PUBLIC_HEDERA_NETWORK
 ```
+
+> **Note:** `create-next-app` now prompts about React Compiler — pipe `echo "no"` for non-interactive use. The shadcn `toast` component is deprecated; use `sonner` instead (simpler API: just call `toast("message")`). Use `--yes` flag to skip shadcn confirmation prompts.
 
 ### Suggested File Structure
 
@@ -66,12 +68,12 @@ my-hedera-app/
 Best for straightforward single operations like balance queries and simple transfers.
 
 ```typescript
-// src/lib/hedera.ts — Shared client singleton
-import { Client, PrivateKey } from '@hashgraph/sdk';
+// src/lib/hedera.ts — Shared client singleton (lazy-init for Next.js build compatibility)
+import { Client, PrivateKey, AccountId } from '@hiero-ledger/sdk';
 
 /** Auto-detect DER vs hex (ECDSA) private key format */
 function parsePrivateKey(key: string): PrivateKey {
-  const trimmed = key.trim();
+  const trimmed = key.trim().replace(/^0x/, '');
   if (trimmed.startsWith('302')) {
     return PrivateKey.fromStringDer(trimmed);
   }
@@ -79,18 +81,35 @@ function parsePrivateKey(key: string): PrivateKey {
 }
 
 const network = process.env.HEDERA_NETWORK || 'testnet';
-const client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
-client.setOperator(
-  process.env.HEDERA_OPERATOR_ID!,
-  parsePrivateKey(process.env.HEDERA_OPERATOR_KEY!)
-);
+const operatorId = process.env.HEDERA_OPERATOR_ID || '';
 
-export { client, network };
+// Lazy-init: avoids build-time crash with placeholder env vars
+let _client: Client | null = null;
+function getClient(): Client {
+  if (!_client) {
+    const id = process.env.HEDERA_OPERATOR_ID;
+    const key = process.env.HEDERA_OPERATOR_KEY;
+    if (!id || !key) throw new Error('Missing HEDERA_OPERATOR_ID or HEDERA_OPERATOR_KEY');
+    _client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
+    _client.setOperator(AccountId.fromString(id), parsePrivateKey(key));
+  }
+  return _client;
+}
+
+const client = new Proxy({} as Client, {
+  get(_, prop) {
+    const c = getClient();
+    const val = (c as any)[prop];
+    return typeof val === 'function' ? (val as Function).bind(c) : val;
+  },
+});
+
+export { client, network, operatorId };
 ```
 
 ```typescript
 // src/app/api/balance/route.ts — Balance query API route
-import { AccountBalanceQuery } from '@hashgraph/sdk';
+import { AccountBalanceQuery } from '@hiero-ledger/sdk';
 import { client } from '@/lib/hedera';
 
 export async function GET(req: Request) {
@@ -127,11 +146,11 @@ import {
   coreConsensusQueryPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { Client, PrivateKey } from '@hashgraph/sdk';
+import { Client, PrivateKey } from '@hiero-ledger/sdk';
 
-const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().startsWith('302')
+const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '').startsWith('302')
   ? PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
-  : PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!);
+  : PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!.replace(/^0x/, ''));
 
 const client = Client.forTestnet().setOperator(
   process.env.HEDERA_OPERATOR_ID!,
@@ -344,7 +363,7 @@ const hashScanBase = network === 'mainnet'
 
 ### UX Patterns
 - **Loading states** for ALL blockchain operations (they take 3-7 seconds)
-- **Success/error toast notifications** for every transaction
+- **Success/error toast notifications** for every transaction (use `sonner` — `toast("message")` or `toast.error("message")`)
 - **Network badge** in header/navbar showing "Testnet" or "Mainnet"
 - **Responsive layout** — mobile-friendly, but desktop-primary
 - **Confirmation dialogs** for destructive or costly operations (transfers, mainnet transactions)

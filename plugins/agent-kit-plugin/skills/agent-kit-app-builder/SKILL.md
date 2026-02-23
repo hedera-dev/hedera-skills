@@ -6,7 +6,7 @@ version: 1.0.0
 
 # Build Hedera Apps with the Agent Kit
 
-This skill enables you to build polished frontend applications with native Hedera blockchain support using the `hedera-agent-kit` npm package and `@hashgraph/sdk`. It also enables live interaction with the Hedera network during development via the Hedera Agent Kit MCP server — query accounts, create test tokens, seed data, and validate that your generated UI works with real on-chain data.
+This skill enables you to build polished frontend applications with native Hedera blockchain support using the `hedera-agent-kit` npm package and `@hiero-ledger/sdk`. It also enables live interaction with the Hedera network during development via the Hedera Agent Kit MCP server — query accounts, create test tokens, seed data, and validate that your generated UI works with real on-chain data.
 
 ## Pre-Flight Checklist
 
@@ -60,7 +60,7 @@ The `demos/` directory contains complete prompts for four demo apps. Copy a `PRO
 
 Three ways to connect your frontend to Hedera (details in `references/frontend-patterns.md`):
 
-1. **Direct SDK** — `@hashgraph/sdk` for simple queries and transactions
+1. **Direct SDK** — `@hiero-ledger/sdk` for simple queries and transactions
 2. **Agent Kit** — `hedera-agent-kit` toolkit with plugins for complex multi-step operations
 3. **Mirror Node REST API** — HTTP queries for read-heavy dashboard UIs (no private key needed)
 

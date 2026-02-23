@@ -22,9 +22,18 @@ import {
 | Method | Route | Action |
 |--------|-------|--------|
 | `POST` | `/api/tokens/create` | Create fungible token (name, symbol, supply, decimals) |
-| `POST` | `/api/tokens/mint` | Mint additional supply (tokenId, amount) |
+| `POST` | `/api/tokens/mint` | Mint additional supply (tokenId, amount, supplyKey) |
 | `POST` | `/api/tokens/transfer` | Transfer tokens (tokenId, toAccountId, amount) |
 | `GET` | `/api/account/balance` | Get HBAR and token balances |
+| `GET` | `/api/account/tokens` | Get all tokens with metadata from Mirror Node |
+
+**Critical Implementation Notes:**
+
+1. **Supply key is required for minting.** When creating a token with `TokenCreateTransaction`, you must call `.setSupplyKey(key)` — otherwise `TokenMintTransaction` will fail with `TOKEN_HAS_NO_SUPPLY_KEY`. Generate a key with `PrivateKey.generateECDSA()` and store it (returned to the client for use in mint requests).
+
+2. **`setInitialSupply()` expects the smallest unit.** For a token with `decimals: 2` and initial supply of `10000`, pass `10000 * 10^2 = 1000000` to `setInitialSupply()`. The same applies to `TokenMintTransaction.setAmount()` and `TransferTransaction.addTokenTransfer()`.
+
+3. **`receipt.totalSupply` can be null.** After minting, always use `receipt.totalSupply?.toString() ?? "unknown"` — the SDK types allow null.
 
 **UI Components:**
 1. Token creation form — name, symbol, initial supply, decimals fields
@@ -59,7 +68,17 @@ src/
     └── types.ts                    # Shared TypeScript types
 ```
 
-**Data Flow:**
+**Data Flow (Pattern 1 — Direct SDK):**
+```
+User fills token form → POST /api/tokens/create → TokenCreateTransaction (with supplyKey)
+  → Hedera returns token ID → API returns { tokenId, transactionId, supplyKey }
+  → UI adds token card to grid, stores supplyKey in state, shows success toast with HashScan link
+
+Mint flow: User opens mint dialog → POST /api/tokens/mint (tokenId, amount, supplyKey)
+  → TokenMintTransaction (signed with supplyKey) → receipt with new totalSupply
+```
+
+**Data Flow (Pattern 2 — Agent Kit):**
 ```
 User fills token form → POST /api/tokens/create → coreTokenPlugin.CREATE_FUNGIBLE_TOKEN_TOOL
   → Hedera returns token ID → API returns { tokenId, transactionId }
@@ -74,9 +93,12 @@ User fills token form → POST /api/tokens/create → coreTokenPlugin.CREATE_FUN
   "name": "DemoToken",
   "symbol": "DMT",
   "initialSupply": 10000,
-  "decimals": 2
+  "decimals": 2,
+  "supplyKey": "302e020100300506..."
 }
 ```
+
+> The `supplyKey` is generated during creation and must be sent back in mint requests. Store it client-side (in React state) for the session. In a production app, store it securely server-side.
 
 **MCP Seeding:** After building, create a test token "DemoToken" (symbol: DMT, supply: 10000, decimals: 2) to populate the UI immediately.
 

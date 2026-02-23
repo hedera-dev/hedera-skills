@@ -6,7 +6,10 @@
 HEDERA_OPERATOR_ID=0.0.XXXXX           # Your Hedera account ID (e.g., 0.0.12345)
 HEDERA_OPERATOR_KEY=302e020100300506... # Private key (DER-encoded or hex — auto-detected)
 HEDERA_NETWORK=testnet                  # "testnet" (default) or "mainnet"
+NEXT_PUBLIC_HEDERA_NETWORK=testnet      # Same value — needed for client-side components
 ```
+
+> **Next.js note:** Server-side env vars (used in API routes) don't need a prefix. But any value read in client components (e.g., `"use client"` files) must be duplicated with the `NEXT_PUBLIC_` prefix.
 
 See `templates/env.example` for a complete `.env` template.
 
@@ -29,14 +32,15 @@ See `templates/env.example` for a complete `.env` template.
 ## Client Initialization by Network
 
 ```typescript
-import { Client, PrivateKey } from '@hashgraph/sdk';
+import { Client, PrivateKey, AccountId } from '@hiero-ledger/sdk';
 
 /**
  * Parse a private key from either DER-encoded or hex (ECDSA) format.
  * DER keys start with "302e" or "3030"; hex keys are raw 64-char hex strings.
+ * Keys starting with "0x" (e.g., from MetaMask) have the prefix stripped automatically.
  */
 function parsePrivateKey(key: string): PrivateKey {
-  const trimmed = key.trim();
+  const trimmed = key.trim().replace(/^0x/, '');
   if (trimmed.startsWith('302')) {
     return PrivateKey.fromStringDer(trimmed);
   }
@@ -44,19 +48,47 @@ function parsePrivateKey(key: string): PrivateKey {
 }
 
 const network = process.env.HEDERA_NETWORK || 'testnet';
-const client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
-client.setOperator(
-  process.env.HEDERA_OPERATOR_ID!,
-  parsePrivateKey(process.env.HEDERA_OPERATOR_KEY!)
-);
+const operatorId = process.env.HEDERA_OPERATOR_ID || '';
+
+// Lazy-init: prevents build-time crash when env vars contain placeholders.
+// Next.js evaluates API route modules during `next build` — eager Client.setOperator()
+// with placeholder values (e.g., "0.0.XXXXX") throws an SDK parse error.
+let _client: Client | null = null;
+
+function getClient(): Client {
+  if (!_client) {
+    const id = process.env.HEDERA_OPERATOR_ID;
+    const key = process.env.HEDERA_OPERATOR_KEY;
+    if (!id || !key) {
+      throw new Error('Missing HEDERA_OPERATOR_ID or HEDERA_OPERATOR_KEY in .env.local');
+    }
+    _client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
+    _client.setOperator(AccountId.fromString(id), parsePrivateKey(key));
+  }
+  return _client;
+}
+
+// Proxy allows importing `client` and using it like a normal Client instance
+// while deferring actual initialization to first use.
+const client = new Proxy({} as Client, {
+  get(_, prop) {
+    const c = getClient();
+    const val = (c as any)[prop];
+    return typeof val === 'function' ? (val as Function).bind(c) : val;
+  },
+});
+
+export { client, network, operatorId };
 ```
+
+> **Why lazy init?** During `next build`, Next.js pre-renders and evaluates all server modules. If the Hedera client is created at module scope with placeholder env vars (like `0.0.XXXXX` in a template `.env.local`), the SDK throws a parse error and the build fails. The Proxy pattern defers initialization until the first API route actually calls the client at runtime.
 
 ### Supported Key Formats
 
 | Format | Example Prefix | Parser |
 |--------|---------------|--------|
 | DER-encoded (default from Hedera Portal) | `302e...`, `3030...` | `PrivateKey.fromStringDer()` |
-| ECDSA hex (64-char hex string) | `a]c1b2...` | `PrivateKey.fromStringECDSA()` |
+| ECDSA hex (64-char hex string) | `a1c1b2...` or `0xa1c1...` | `PrivateKey.fromStringECDSA()` |
 | ED25519 (if explicitly needed) | varies | `PrivateKey.fromStringED25519()` |
 
 The `parsePrivateKey()` helper above auto-detects DER vs hex. Use it everywhere instead of hardcoding a specific format.

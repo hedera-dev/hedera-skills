@@ -46,7 +46,7 @@ const myToolExecute = async (
 ### With Status Code
 
 ```typescript
-import { Status } from '@hashgraph/sdk';
+import { Status } from '@hiero-ledger/sdk';
 
 const createTokenExecute = async (
   client: Client,
@@ -284,7 +284,7 @@ console.warn('[query_tool]', 'Rate limit approaching');
 
 ```typescript
 import { z } from 'zod';
-import { Client, Status } from '@hashgraph/sdk';
+import { Client, Status } from '@hiero-ledger/sdk';
 import { Context, Tool } from 'hedera-agent-kit';
 import { handleTransaction, RawTransactionResponse, transactionToolOutputParser } from 'hedera-agent-kit';
 
