@@ -69,11 +69,20 @@ Best for straightforward single operations like balance queries and simple trans
 // src/lib/hedera.ts — Shared client singleton
 import { Client, PrivateKey } from '@hashgraph/sdk';
 
+/** Auto-detect DER vs hex (ECDSA) private key format */
+function parsePrivateKey(key: string): PrivateKey {
+  const trimmed = key.trim();
+  if (trimmed.startsWith('302')) {
+    return PrivateKey.fromStringDer(trimmed);
+  }
+  return PrivateKey.fromStringECDSA(trimmed);
+}
+
 const network = process.env.HEDERA_NETWORK || 'testnet';
 const client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
 client.setOperator(
   process.env.HEDERA_OPERATOR_ID!,
-  PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
+  parsePrivateKey(process.env.HEDERA_OPERATOR_KEY!)
 );
 
 export { client, network };
@@ -120,9 +129,13 @@ import {
 } from 'hedera-agent-kit';
 import { Client, PrivateKey } from '@hashgraph/sdk';
 
+const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().startsWith('302')
+  ? PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
+  : PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!);
+
 const client = Client.forTestnet().setOperator(
   process.env.HEDERA_OPERATOR_ID!,
-  PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
+  operatorKey
 );
 
 const toolkit = new HederaLangchainToolkit({

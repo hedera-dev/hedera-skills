@@ -4,7 +4,7 @@
 
 ```env
 HEDERA_OPERATOR_ID=0.0.XXXXX           # Your Hedera account ID (e.g., 0.0.12345)
-HEDERA_OPERATOR_KEY=302e020100300506... # DER-encoded private key (default format)
+HEDERA_OPERATOR_KEY=302e020100300506... # Private key (DER-encoded or hex — auto-detected)
 HEDERA_NETWORK=testnet                  # "testnet" (default) or "mainnet"
 ```
 
@@ -15,7 +15,7 @@ See `templates/env.example` for a complete `.env` template.
 1. Go to [https://portal.hedera.com](https://portal.hedera.com)
 2. Create a free account
 3. Copy your **Account ID** (format: `0.0.XXXXX`)
-4. Copy your **DER-encoded private key** (starts with `302e...`)
+4. Copy your **private key** — either DER-encoded (starts with `302e...`) or hex format (64-char hex string)
 5. Testnet accounts receive free test HBAR — no real cost
 
 ## Network URLs
@@ -31,26 +31,35 @@ See `templates/env.example` for a complete `.env` template.
 ```typescript
 import { Client, PrivateKey } from '@hashgraph/sdk';
 
+/**
+ * Parse a private key from either DER-encoded or hex (ECDSA) format.
+ * DER keys start with "302e" or "3030"; hex keys are raw 64-char hex strings.
+ */
+function parsePrivateKey(key: string): PrivateKey {
+  const trimmed = key.trim();
+  if (trimmed.startsWith('302')) {
+    return PrivateKey.fromStringDer(trimmed);
+  }
+  return PrivateKey.fromStringECDSA(trimmed);
+}
+
 const network = process.env.HEDERA_NETWORK || 'testnet';
 const client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
 client.setOperator(
   process.env.HEDERA_OPERATOR_ID!,
-  PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
+  parsePrivateKey(process.env.HEDERA_OPERATOR_KEY!)
 );
 ```
 
-### Alternative Key Formats
+### Supported Key Formats
 
-```typescript
-// DER-encoded (default, recommended)
-PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
+| Format | Example Prefix | Parser |
+|--------|---------------|--------|
+| DER-encoded (default from Hedera Portal) | `302e...`, `3030...` | `PrivateKey.fromStringDer()` |
+| ECDSA hex (64-char hex string) | `a]c1b2...` | `PrivateKey.fromStringECDSA()` |
+| ED25519 (if explicitly needed) | varies | `PrivateKey.fromStringED25519()` |
 
-// ECDSA hex format
-PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!)
-
-// ED25519 format
-PrivateKey.fromStringED25519(process.env.HEDERA_OPERATOR_KEY!)
-```
+The `parsePrivateKey()` helper above auto-detects DER vs hex. Use it everywhere instead of hardcoding a specific format.
 
 ## MCP Server Network Flag
 
