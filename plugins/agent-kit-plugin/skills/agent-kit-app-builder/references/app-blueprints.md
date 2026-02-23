@@ -336,7 +336,7 @@ src/
 
 **Data Flow:**
 ```
-User fills mint form → POST /api/nfts/mint → MINT_NFT_TOOL (metadata as JSON string)
+User fills mint form → POST /api/nfts/mint → MINT_NON_FUNGIBLE_TOKEN_TOOL (metadata as JSON string)
   → Hedera returns serial number → API returns { tokenId, serialNumber, transactionId }
   → UI adds NFT card to gallery, shows success toast
 ```

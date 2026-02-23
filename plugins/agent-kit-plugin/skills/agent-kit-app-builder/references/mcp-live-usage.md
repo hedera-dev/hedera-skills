@@ -57,11 +57,11 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** Querying the user's account gives you real data (HBAR balance, associated tokens, NFTs) to populate the initial UI state instead of mock data.
 
 **Workflow:**
-1. Call `get_hbar_balance` with the operator's account ID
-2. Call `get_account_info` for full account details
+1. Call `get_hbar_balance_query_tool` with the operator's account ID
+2. Call `get_account_query_tool` for full account details
 3. Use the returned balances, token associations, and account metadata as the initial state for the UI being built
 
-**MCP tools:** `get_hbar_balance`, `get_account_info`
+**MCP tools:** `get_hbar_balance_query_tool`, `get_account_query_tool`
 
 ### Pattern 2: Token Seeding
 
@@ -70,12 +70,12 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** The UI immediately has real token data to render, so you can verify layouts, sorting, and display logic with actual on-chain state.
 
 **Workflow:**
-1. Call `create_fungible_token` — e.g., name: "DemoToken", symbol: "DMT", initialSupply: 10000, decimals: 2
+1. Call `create_fungible_token_tool` — e.g., name: "DemoToken", symbol: "DMT", initialSupply: 10000, decimals: 2
 2. Note the returned token ID
-3. Call `get_token_info` with the new token ID to verify creation
+3. Call `get_token_info_query_tool` with the new token ID to verify creation
 4. The UI can now fetch and display this real token
 
-**MCP tools:** `create_fungible_token`, `get_token_info`, `get_token_balance`
+**MCP tools:** `create_fungible_token_tool`, `get_token_info_query_tool`
 
 ### Pattern 3: HCS Testing
 
@@ -84,13 +84,13 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** Verifies the message feed renders correctly with real consensus timestamps and sequence numbers.
 
 **Workflow:**
-1. Call `create_topic` with memo: "General Discussion"
-2. Call `submit_topic_message` with topicId and message: "Hello Hedera!"
+1. Call `create_topic_tool` with memo: "General Discussion"
+2. Call `submit_topic_message_tool` with topicId and message: "Hello Hedera!"
 3. Repeat with 1-2 more test messages
-4. Call `get_topic_messages` to verify messages are retrievable
+4. Call `get_topic_messages_query_tool` to verify messages are retrievable
 5. Check the UI's message feed renders the messages correctly
 
-**MCP tools:** `create_topic`, `submit_topic_message`, `get_topic_messages`
+**MCP tools:** `create_topic_tool`, `submit_topic_message_tool`, `get_topic_messages_query_tool`
 
 ### Pattern 4: NFT Minting
 
@@ -99,13 +99,13 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** The gallery immediately has NFTs with metadata to render, testing image display, card layouts, and metadata formatting.
 
 **Workflow:**
-1. Call `create_nft` — name: "AI Art Collection", symbol: "AIART"
-2. Call `mint_nft` with metadata containing name, description, and image URL
+1. Call `create_non_fungible_token` — name: "AI Art Collection", symbol: "AIART"
+2. Call `mint_non_fungible_token` with metadata containing name, description, and image URL
 3. Repeat for 1-2 more NFTs with varied metadata
 4. Call `get_token_info` to verify collection stats
 5. The gallery grid now has real NFTs to display
 
-**MCP tools:** `create_nft`, `mint_nft`, `get_token_info`
+**MCP tools:** `create_non_fungible_token`, `mint_non_fungible_token`, `get_token_info`
 
 ### Pattern 5: Transfer Verification
 
@@ -114,12 +114,12 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** Confirms that the transfer flow works end-to-end and the transaction history displays correctly.
 
 **Workflow:**
-1. Call `transfer_hbar` to send a small amount (e.g., 1 HBAR) to a test account
+1. Call `transfer_hbar_tool` to send a small amount (e.g., 1 HBAR) to a test account
 2. Verify the transaction hash is returned
 3. Check the UI's transaction history shows the new transfer
 4. Verify balance updates in the UI
 
-**MCP tools:** `transfer_hbar`, `transfer_token`, `get_hbar_balance`
+**MCP tools:** `transfer_hbar_tool`, `get_hbar_balance_query_tool`
 
 ### Pattern 6: Capability Exploration
 
@@ -128,63 +128,94 @@ These patterns make this skill significantly more powerful than read-only API in
 **Why:** By inspecting the user's actual on-chain state, you can suggest relevant apps based on what they already have.
 
 **Workflow:**
-1. Call `get_account_info` to see the user's account state
-2. Call `get_hbar_balance` to check their HBAR balance
+1. Call `get_account_query_tool` to see the user's account state
+2. Call `get_hbar_balance_query_tool` to check their HBAR balance
 3. Based on what you find, suggest relevant apps:
    - User has tokens → suggest a wallet dashboard or token manager
    - User has HBAR → suggest a token launchpad to create their first token
    - User has NFTs → suggest an NFT gallery to display their collection
    - User has nothing → suggest starting with the token launchpad demo
 
-**MCP tools:** `get_account_info`, `get_hbar_balance`
+**MCP tools:** `get_account_query_tool`, `get_hbar_balance_query_tool`
 
 ---
 
 ## Available MCP Tools
 
+The MCP server exposes the same tools as the SDK. Tool names use `snake_case` (matching the tool `method` values).
+
 ### Account Tools
 
 | Tool | Params | Description |
 |------|--------|-------------|
-| `get_hbar_balance` | `accountId: string` | Get HBAR balance for an account |
-| `get_account_info` | `accountId: string` | Get full account info (keys, tokens, balance) |
-| `create_account` | `initialBalance: number` | Create a new Hedera account with initial HBAR |
+| `transfer_hbar_tool` | `toAccountId: string, amount: number` | Transfer HBAR |
+| `create_account_tool` | `initialBalance: number` | Create a new Hedera account |
+| `update_account_tool` | `accountId: string`, optional fields | Update account properties |
+| `approve_hbar_allowance_tool` | `spenderAccountId: string, amount: number` | Approve HBAR spending allowance |
+| `approve_token_allowance_tool` | `tokenId: string, spenderAccountId: string, amount: number` | Approve token allowance |
+
+### Account Query Tools
+
+| Tool | Params | Description |
+|------|--------|-------------|
+| `get_account_query_tool` | `accountId: string` | Get full account info (keys, tokens, balance) |
+| `get_hbar_balance_query_tool` | `accountId: string` | Get HBAR balance for an account |
+| `get_account_token_balances_query_tool` | `accountId: string` | Get all token balances for account |
 
 ### Token (HTS) Tools
 
 | Tool | Params | Description |
 |------|--------|-------------|
-| `create_fungible_token` | `name: string, symbol: string, initialSupply: number, decimals: number` + optional treasury, admin/supply/freeze/wipe/kyc keys | Create a fungible token |
-| `create_nft` | `name: string, symbol: string` + optional `maxSupply: number`, keys | Create an NFT collection |
-| `mint_fungible_token` | `tokenId: string, amount: number` | Mint additional fungible token supply |
-| `mint_nft` | `tokenId: string, metadata: string` | Mint an NFT with metadata |
-| `transfer_token` | `tokenId: string, fromAccountId: string, toAccountId: string, amount: number` | Transfer fungible tokens |
-| `transfer_nft` | `tokenId: string, serialNumber: number, fromAccountId: string, toAccountId: string` | Transfer an NFT |
-| `associate_token` | `tokenId: string, accountId: string` | Associate a token with an account |
-| `get_token_info` | `tokenId: string` | Get token metadata (name, symbol, supply, etc.) |
-| `get_token_balance` | `tokenId: string, accountId: string` | Get token balance for a specific account |
+| `create_fungible_token_tool` | `name, symbol, initialSupply, decimals` + optional keys | Create a fungible token |
+| `create_non_fungible_token_tool` | `name, symbol` + optional `maxSupply`, keys | Create an NFT collection |
+| `mint_fungible_token_tool` | `tokenId: string, amount: number` | Mint additional fungible supply |
+| `mint_non_fungible_token_tool` | `tokenId: string, metadata: string` | Mint an NFT with metadata |
+| `airdrop_fungible_token_tool` | `tokenId: string, recipients: array` | Airdrop tokens to multiple recipients |
+| `transfer_non_fungible_token_tool` | `tokenId, serialNumber, toAccountId` | Transfer an NFT |
+| `associate_token_tool` | `tokenId: string, accountId: string` | Associate a token with an account |
+| `dissociate_token_tool` | `tokenId: string, accountId: string` | Dissociate a token from an account |
+| `update_token_tool` | `tokenId: string`, optional fields | Update token properties |
+
+### Token Query Tools
+
+| Tool | Params | Description |
+|------|--------|-------------|
+| `get_token_info_query_tool` | `tokenId: string` | Get token metadata (name, symbol, supply) |
+| `get_pending_airdrop_tool` | `accountId: string` | Get pending airdrops for an account |
 
 ### Consensus (HCS) Tools
 
 | Tool | Params | Description |
 |------|--------|-------------|
-| `create_topic` | `memo?: string, adminKey?: string, submitKey?: string` | Create an HCS topic |
-| `submit_topic_message` | `topicId: string, message: string` | Post a message to a topic |
-| `get_topic_info` | `topicId: string` | Get topic metadata |
-| `get_topic_messages` | `topicId: string` | Get all messages from a topic |
+| `create_topic_tool` | `memo?: string, adminKey?: string, submitKey?: string` | Create an HCS topic |
+| `submit_topic_message_tool` | `topicId: string, message: string` | Post a message to a topic |
+| `update_topic_tool` | `topicId: string`, updated fields | Update a topic |
+| `delete_topic_tool` | `topicId: string` | Delete a topic |
 
-### Transfer Tools
-
-| Tool | Params | Description |
-|------|--------|-------------|
-| `transfer_hbar` | `toAccountId: string, amount: number` | Transfer HBAR to another account |
-
-### Smart Contract (EVM) Tools
+### Consensus Query Tools
 
 | Tool | Params | Description |
 |------|--------|-------------|
-| `deploy_contract` | `bytecode: string, gas: number` | Deploy a smart contract |
-| `call_contract_function` | `contractId: string, functionName: string, params: any[], gas: number` | Call a contract function |
+| `get_topic_info_query_tool` | `topicId: string` | Get topic metadata |
+| `get_topic_messages_query_tool` | `topicId: string` | Get messages from a topic |
+
+### EVM / Smart Contract Tools
+
+| Tool | Params | Description |
+|------|--------|-------------|
+| `create_erc20_tool` | `name, symbol, totalSupply` | Deploy ERC-20 token |
+| `transfer_erc20_tool` | `contractId, toAddress, amount` | Transfer ERC-20 tokens |
+| `create_erc721_tool` | `name, symbol` | Deploy ERC-721 NFT contract |
+| `mint_erc721_tool` | `contractId, toAddress, tokenURI` | Mint ERC-721 NFT |
+| `transfer_erc721_tool` | `contractId, toAddress, tokenId` | Transfer ERC-721 NFT |
+
+### Query Tools
+
+| Tool | Params | Description |
+|------|--------|-------------|
+| `get_contract_info_query_tool` | `contractId: string` | Get contract info |
+| `get_transaction_record_query_tool` | `transactionId: string` | Get transaction details |
+| `get_exchange_rate_tool` | none | Get current HBAR exchange rate |
 
 ---
 
