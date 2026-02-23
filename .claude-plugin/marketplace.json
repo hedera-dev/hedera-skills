@@ -9,14 +9,14 @@
   "plugins": [
     {
       "name": "agent-kit-plugin",
-      "description": "Comprehensive guide for creating custom plugins that extend the Hedera Agent Kit with new tools for network interactions",
-      "version": "1.0.0",
+      "description": "Two skills for Hedera Agent Kit: (1) plugin development guide for creating custom tools, and (2) app builder for generating Hedera-powered frontend applications with live MCP-based blockchain interaction",
+      "version": "1.1.0",
       "author": {
         "name": "Hedera Dev"
       },
       "source": "./plugins/agent-kit-plugin",
       "category": "development",
-      "keywords": ["hedera", "agent-kit", "plugin", "tools", "blockchain"]
+      "keywords": ["hedera", "agent-kit", "plugin", "tools", "blockchain", "frontend", "react", "nextjs", "mcp", "app-builder", "hts", "hcs", "nft"]
     },
     {
       "name": "hts-system-contract",

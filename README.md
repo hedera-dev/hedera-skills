@@ -28,6 +28,10 @@ Skills are automatically available once installed. The agent will use them when 
 
 ### agent-kit-plugin
 
+Two skills for the Hedera Agent Kit: a plugin development guide and an app builder for Hedera-powered frontends.
+
+#### Skill: agent-kit-plugin (Plugin Development)
+
 Comprehensive guide for creating custom plugins that extend the Hedera Agent Kit. Enables developers to add new tools for Hedera network interactions.
 
 **Use when:**
@@ -54,6 +58,36 @@ Comprehensive guide for creating custom plugins that extend the Hedera Agent Kit
 - `zod-schema-patterns.md` - Parameter validation patterns for Hedera operations
 - `prompt-patterns.md` - Effective tool description writing
 - `error-handling.md` - Error handling and output parsing patterns
+
+#### Skill: agent-kit-app-builder (App Builder)
+
+Build Hedera-powered frontend applications using the Hedera Agent Kit and its MCP server. Combines frontend code generation (React/Next.js) with live MCP-based blockchain interaction during development — so apps start with real on-chain data, not mock data.
+
+**Use when:**
+
+- Building a web app, dashboard, or UI that interacts with Hedera
+- Creating token launchpads, wallet dashboards, NFT galleries, or message boards
+- Wanting to query or transact on Hedera from your development environment
+- Asking "what can I build on Hedera?" or exploring Hedera capabilities
+- Needing to seed test data (tokens, NFTs, HCS messages) during development
+
+**Topics covered:**
+
+- MCP server setup and live development usage patterns
+- React/Next.js frontend patterns for Hedera apps (3 integration approaches)
+- Condensed `hedera-agent-kit` v3.7.x SDK reference
+- Network configuration (testnet/mainnet), environment variables
+- Four pre-designed app blueprints with complete specifications
+- Platform-specific MCP configs (Claude Code, Cursor, VS Code, generic stdio)
+- Four ready-to-use demo prompts for one-shot app generation
+
+**References included:**
+
+- `mcp-live-usage.md` - MCP server setup and development-time usage patterns
+- `frontend-patterns.md` - React/Next.js patterns for Hedera apps
+- `agent-kit-sdk-reference.md` - Condensed API reference for hedera-agent-kit
+- `network-config.md` - Testnet/mainnet configuration, environment variables
+- `app-blueprints.md` - Pre-designed app architectures (4 blueprints)
 
 ### hts-system-contract
 
@@ -119,12 +153,23 @@ hedera-skills/
 ├── .claude-plugin/
 │   └── marketplace.json      # Marketplace manifest
 ├── plugins/
-│   ├── agent-kit-plugin/     # Agent Kit plugin development
+│   ├── agent-kit-plugin/     # Agent Kit plugin dev + app builder
 │   │   └── skills/
-│   │       └── agent-kit-plugin/
+│   │       ├── agent-kit-plugin/
+│   │       │   ├── SKILL.md
+│   │       │   ├── examples/
+│   │       │   └── references/
+│   │       └── agent-kit-app-builder/
 │   │           ├── SKILL.md
-│   │           ├── examples/
-│   │           └── references/
+│   │           ├── references/
+│   │           ├── templates/
+│   │           │   ├── env.example
+│   │           │   └── mcp-configs/
+│   │           └── demos/
+│   │               ├── token-launchpad/
+│   │               ├── wallet-dashboard/
+│   │               ├── hcs-message-board/
+│   │               └── nft-gallery/
 │   ├── hackathon-helper/     # Hackathon PRD & validation
 │   │   └── skills/
 │   │       ├── hackathon-prd/
