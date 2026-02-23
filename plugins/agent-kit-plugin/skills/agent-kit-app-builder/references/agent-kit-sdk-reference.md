@@ -5,8 +5,10 @@ Condensed API reference for `hedera-agent-kit` v3.7.x / v3.8.x npm package.
 ## Installation
 
 ```bash
-npm install hedera-agent-kit @hashgraph/sdk @langchain/core langchain dotenv
+npm install hedera-agent-kit @hiero-ledger/sdk @langchain/core langchain dotenv
 ```
+
+> **Note:** The Hedera SDK was renamed from `@hashgraph/sdk` to `@hiero-ledger/sdk`. Both packages export the same API. Use `@hiero-ledger/sdk` for new projects.
 
 ## Initialization
 
@@ -20,12 +22,14 @@ import {
   coreMiscQueriesPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { Client, PrivateKey } from '@hashgraph/sdk';
+import { Client, PrivateKey } from '@hiero-ledger/sdk';
 
 // Auto-detect key format: DER (starts with "302") vs hex (ECDSA)
-const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().startsWith('302')
-  ? PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
-  : PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!);
+// Strip "0x" prefix if present (common with MetaMask/wallet exports)
+const rawKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '');
+const operatorKey = rawKey.startsWith('302')
+  ? PrivateKey.fromStringDer(rawKey)
+  : PrivateKey.fromStringECDSA(rawKey);
 
 // Client setup
 const client = Client.forTestnet().setOperator(
@@ -93,9 +97,9 @@ const tools = toolkit.getTools();
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
-| `CREATE_FUNGIBLE_TOKEN_TOOL` | `name: string, symbol: string, initialSupply: number, decimals: number`. Optional: `treasuryAccountId`, `adminKey`, `supplyKey`, `freezeKey`, `wipeKey`, `kycKey` | Create fungible token |
+| `CREATE_FUNGIBLE_TOKEN_TOOL` | `name: string, symbol: string, initialSupply: number, decimals: number`. Optional: `treasuryAccountId`, `adminKey`, `supplyKey`, `freezeKey`, `wipeKey`, `kycKey` | Create fungible token. **Important:** `initialSupply` is in smallest units (multiply by `10^decimals`). Must set `supplyKey` if minting later. |
 | `CREATE_NON_FUNGIBLE_TOKEN_TOOL` | `name: string, symbol: string`. Optional: `maxSupply: number` (omit for infinite), `treasuryAccountId`, keys | Create NFT collection |
-| `MINT_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, amount: number` | Mint additional fungible supply |
+| `MINT_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, amount: number` | Mint additional fungible supply. `amount` is in smallest units. Receipt `totalSupply` can be null — use optional chaining. |
 | `MINT_NON_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, metadata: string` (or byte array) | Mint NFT with metadata |
 | `AIRDROP_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, recipients: array` | Airdrop fungible tokens to multiple recipients |
 | `TRANSFER_NON_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, serialNumber: number, toAccountId: string` | Transfer an NFT |

@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Client } from '@hashgraph/sdk';
+import { Client } from '@hiero-ledger/sdk';
 import { Context, Tool } from 'hedera-agent-kit';
 import { untypedQueryOutputParser } from 'hedera-agent-kit';
 

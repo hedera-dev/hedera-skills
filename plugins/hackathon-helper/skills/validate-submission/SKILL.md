@@ -14,7 +14,7 @@ Scan the codebase to understand what was built:
 1. Read the README.md (or equivalent) for project overview
 2. Identify the tech stack:
    - `package.json`, `Cargo.toml`, `go.mod`, `requirements.txt`, etc.
-   - Look for Hedera SDK dependencies (`@hashgraph/sdk`, `hedera-sdk-*`, etc.)
+   - Look for Hedera SDK dependencies (`@hiero-ledger/sdk`, `@hashgraph/sdk`, `hedera-sdk-*`, etc.)
 3. Find Hedera integration points:
    - Search for Hedera SDK imports and usage
    - Search for HTS precompile addresses (`0x167`)

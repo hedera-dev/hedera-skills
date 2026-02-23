@@ -210,7 +210,7 @@ import { handleTransaction, RawTransactionResponse } from 'hedera-agent-kit';
 import { transactionToolOutputParser, untypedQueryOutputParser } from 'hedera-agent-kit';
 
 // Hedera SDK types
-import { Client, Status } from '@hashgraph/sdk';
+import { Client, Status } from '@hiero-ledger/sdk';
 
 // Parameter validation
 import { z } from 'zod';

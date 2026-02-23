@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { Client, Status, TokenCreateTransaction, TokenType, TokenSupplyType } from '@hashgraph/sdk';
+import { Client, Status, TokenCreateTransaction, TokenType, TokenSupplyType } from '@hiero-ledger/sdk';
 import { Context, Tool } from 'hedera-agent-kit';
 import { handleTransaction, RawTransactionResponse, transactionToolOutputParser } from 'hedera-agent-kit';
 
