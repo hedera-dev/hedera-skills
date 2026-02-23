@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "Claude Code MCP configuration for the Hedera Agent Kit.",
+    "Place this in your project's .claude/mcp.json or ~/.claude/mcp.json.",
+    "Replace <PATH_TO_HEDERA_AGENT_KIT> with the absolute path to your cloned hedera-agent-kit-js repo.",
+    "Replace 0.0.XXXXX and 302e... with your Hedera account ID and DER-encoded private key.",
+    "To switch to mainnet, change --ledger-id=testnet to --ledger-id=mainnet."
+  ],
+  "mcpServers": {
+    "hedera": {
+      "command": "node",
+      "args": [
+        "<PATH_TO_HEDERA_AGENT_KIT>/modelcontextprotocol/dist/index.js",
+        "--ledger-id=testnet"
+      ],
+      "env": {
+        "HEDERA_OPERATOR_ID": "0.0.XXXXX",
+        "HEDERA_OPERATOR_KEY": "302e..."
+      }
+    }
+  }
+}
