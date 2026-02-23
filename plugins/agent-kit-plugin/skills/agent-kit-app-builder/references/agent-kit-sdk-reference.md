@@ -1,6 +1,6 @@
 # Hedera Agent Kit SDK Reference
 
-Condensed API reference for `hedera-agent-kit` v3.7.x npm package.
+Condensed API reference for `hedera-agent-kit` v3.7.x / v3.8.x npm package.
 
 ## Installation
 
@@ -69,11 +69,17 @@ const tools = toolkit.getTools();
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
+| `TRANSFER_HBAR_TOOL` | `toAccountId: string, amount: number` (HBAR) | Transfer HBAR |
 | `CREATE_ACCOUNT_TOOL` | `initialBalance: number` (HBAR) | Create a new Hedera account |
 | `UPDATE_ACCOUNT_TOOL` | `accountId: string`, optional fields | Update account properties |
-| `APPROVE_ALLOWANCE_TOOL` | `spenderAccountId: string, amount: number`, optional `tokenId: string` | Approve HBAR or token allowance |
-| `DELETE_ALLOWANCE_TOOL` | `ownerAccountId: string, spenderAccountId: string` | Delete an allowance |
-| `TRANSFER_HBAR_TOOL` | `toAccountId: string, amount: number` (HBAR) | Transfer HBAR |
+| `DELETE_ACCOUNT_TOOL` | `accountId: string` | Delete account and transfer remaining assets |
+| `APPROVE_HBAR_ALLOWANCE_TOOL` | `spenderAccountId: string, amount: number` | Approve HBAR spending allowance |
+| `DELETE_HBAR_ALLOWANCE_TOOL` | `spenderAccountId: string` | Delete HBAR allowance |
+| `TRANSFER_HBAR_WITH_ALLOWANCE_TOOL` | `fromAccountId: string, toAccountId: string, amount: number` | Transfer HBAR using existing allowance |
+| `APPROVE_TOKEN_ALLOWANCE_TOOL` | `tokenId: string, spenderAccountId: string, amount: number` | Approve fungible token allowance |
+| `DELETE_TOKEN_ALLOWANCE_TOOL` | `tokenId: string, spenderAccountId: string` | Delete fungible token allowance |
+| `SIGN_SCHEDULE_TRANSACTION_TOOL` | `scheduleId: string` | Sign a scheduled transaction |
+| `SCHEDULE_DELETE_TOOL` | `scheduleId: string` | Delete a scheduled transaction |
 
 ### Core Account Query Plugin (`coreAccountQueryPlugin`)
 
@@ -81,29 +87,32 @@ const tools = toolkit.getTools();
 |---------------|--------|-------------|
 | `GET_ACCOUNT_QUERY_TOOL` | `accountId: string` | Get full account info |
 | `GET_HBAR_BALANCE_QUERY_TOOL` | `accountId: string` | Get HBAR balance |
-| `GET_ACCOUNT_TOKENS_QUERY_TOOL` | `accountId: string` | Get all token balances for account |
+| `GET_ACCOUNT_TOKEN_BALANCES_QUERY_TOOL` | `accountId: string` | Get all token balances for account |
 
 ### Core Token Plugin (`coreTokenPlugin`)
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
 | `CREATE_FUNGIBLE_TOKEN_TOOL` | `name: string, symbol: string, initialSupply: number, decimals: number`. Optional: `treasuryAccountId`, `adminKey`, `supplyKey`, `freezeKey`, `wipeKey`, `kycKey` | Create fungible token |
-| `CREATE_NFT_TOOL` | `name: string, symbol: string`. Optional: `maxSupply: number` (omit for infinite), `treasuryAccountId`, keys | Create NFT collection |
-| `MINT_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, amount: number` | Mint additional supply |
-| `MINT_NFT_TOOL` | `tokenId: string, metadata: string` (or byte array) | Mint NFT with metadata |
-| `TRANSFER_TOKEN_TOOL` | `tokenId: string, toAccountId: string, amount: number` | Transfer fungible tokens |
-| `TRANSFER_NFT_TOOL` | `tokenId: string, serialNumber: number, toAccountId: string` | Transfer an NFT |
+| `CREATE_NON_FUNGIBLE_TOKEN_TOOL` | `name: string, symbol: string`. Optional: `maxSupply: number` (omit for infinite), `treasuryAccountId`, keys | Create NFT collection |
+| `MINT_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, amount: number` | Mint additional fungible supply |
+| `MINT_NON_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, metadata: string` (or byte array) | Mint NFT with metadata |
+| `AIRDROP_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, recipients: array` | Airdrop fungible tokens to multiple recipients |
+| `TRANSFER_NON_FUNGIBLE_TOKEN_TOOL` | `tokenId: string, serialNumber: number, toAccountId: string` | Transfer an NFT |
+| `TRANSFER_FUNGIBLE_TOKEN_WITH_ALLOWANCE_TOOL` | `tokenId: string, fromAccountId: string, toAccountId: string, amount: number` | Transfer fungible tokens using allowance |
+| `TRANSFER_NON_FUNGIBLE_TOKEN_WITH_ALLOWANCE_TOOL` | `tokenId: string, serialNumber: number, fromAccountId: string, toAccountId: string` | Transfer NFT using allowance |
+| `APPROVE_NFT_ALLOWANCE_TOOL` | `tokenId: string, spenderAccountId: string, serialNumber: number` | Approve NFT allowance |
+| `DELETE_NFT_ALLOWANCE_TOOL` | `tokenId: string, spenderAccountId: string, serialNumber: number` | Delete NFT allowance |
 | `ASSOCIATE_TOKEN_TOOL` | `tokenId: string, accountId: string` | Associate token with account |
 | `DISSOCIATE_TOKEN_TOOL` | `tokenId: string, accountId: string` | Dissociate token from account |
-| `REJECT_TOKEN_TOOL` | `tokenId: string` | Reject an airdropped token |
+| `UPDATE_TOKEN_TOOL` | `tokenId: string`, optional fields | Update token properties |
 
 ### Core Token Query Plugin (`coreTokenQueryPlugin`)
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
 | `GET_TOKEN_INFO_QUERY_TOOL` | `tokenId: string` | Get token metadata (name, symbol, supply, etc.) |
-| `GET_TOKEN_BALANCE_QUERY_TOOL` | `tokenId: string, accountId: string` | Get token balance for account |
-| `GET_NFT_INFO_QUERY_TOOL` | `tokenId: string, serialNumber: number` | Get NFT info and metadata |
+| `GET_PENDING_AIRDROP_TOOL` | `accountId: string` | Get pending airdrops for an account |
 
 ### Core Consensus Plugin (`coreConsensusPlugin`)
 
@@ -125,17 +134,29 @@ const tools = toolkit.getTools();
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
-| `DEPLOY_CONTRACT_TOOL` | `bytecode: string, gas: number` | Deploy smart contract |
-| `CALL_CONTRACT_FUNCTION_TOOL` | `contractId: string, functionName: string, parameters: any[], gas: number` | Call contract function |
-| `CREATE_ERC20_TOOL` | `name: string, symbol: string, totalSupply: number` | Deploy ERC-20 token |
+| `CREATE_ERC20_TOOL` | `name: string, symbol: string, totalSupply: number` | Deploy ERC-20 token via factory |
+| `TRANSFER_ERC20_TOOL` | `contractId: string, toAddress: string, amount: number` | Transfer ERC-20 tokens |
 | `CREATE_ERC721_TOOL` | `name: string, symbol: string` | Deploy ERC-721 NFT contract |
+| `MINT_ERC721_TOOL` | `contractId: string, toAddress: string, tokenURI: string` | Mint ERC-721 NFT |
+| `TRANSFER_ERC721_TOOL` | `contractId: string, toAddress: string, tokenId: number` | Transfer ERC-721 NFT |
 
 ### Core EVM Query Plugin (`coreEVMQueryPlugin`)
 
 | Tool Constant | Params | Description |
 |---------------|--------|-------------|
 | `GET_CONTRACT_INFO_QUERY_TOOL` | `contractId: string` | Get contract info |
-| `GET_CONTRACT_BYTECODE_QUERY_TOOL` | `contractId: string` | Get contract bytecode |
+
+### Core Transaction Query Plugin (`coreTransactionQueryPlugin`)
+
+| Tool Constant | Params | Description |
+|---------------|--------|-------------|
+| `GET_TRANSACTION_RECORD_QUERY_TOOL` | `transactionId: string` | Get transaction details by ID |
+
+### Core Misc Queries Plugin (`coreMiscQueriesPlugin`)
+
+| Tool Constant | Params | Description |
+|---------------|--------|-------------|
+| `GET_EXCHANGE_RATE_TOOL` | none | Get current HBAR exchange rate |
 
 ---
 
