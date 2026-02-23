@@ -27,7 +27,12 @@ npm install hedera-agent-kit @hiero-ledger/sdk dotenv
 npx shadcn@latest init -d --force
 npx shadcn@latest add button card input dialog label sonner table badge tabs separator --yes
 
-# 4. Create .env.local
+# 4. Fix Turbopack lockfile warning (common when project is nested under a parent with its own lockfile)
+# Add to next.config.ts:
+#   import path from "path";
+#   turbopack: { root: path.resolve(__dirname) }
+
+# 5. Create .env.local
 cp templates/env.example .env.local
 # Fill in HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY, HEDERA_NETWORK, NEXT_PUBLIC_HEDERA_NETWORK
 ```
@@ -283,7 +288,9 @@ interface TokenRow {
 
 ### Token Creation Form
 
-**Fields:** name (string), symbol (string, 3-8 chars), initial supply (number), decimals (0-18).
+**Fields:** name (string), symbol (string, 3-8 chars), initial supply (number), decimals (0-18, default: 0).
+
+> **Default decimals to 0** for demo/launchpad apps. Decimals of 0 means whole tokens (1 token = 1 unit). This is simpler for users to understand. Use higher decimals (e.g., 8 or 18) only when fractional tokens are needed.
 
 ### Transfer Dialog
 
