@@ -8,6 +8,16 @@ Pre-designed app architectures for Hedera-powered frontends. Each blueprint is a
 
 **Description:** Create fungible tokens with custom parameters, mint additional supply, and transfer to other accounts — all from a polished UI.
 
+> **Two variants available:**
+> - **1A: HTS (Hedera Token Service)** — Default. Uses native Hedera token primitives (`TokenCreateTransaction`, `TokenMintTransaction`). No smart contracts needed. Tokens are first-class Hedera entities with built-in compliance features.
+> - **1B: EVM (Smart Contracts)** — Uses Solidity ERC-20 contracts deployed via `CREATE_ERC20_TOOL`. Familiar to Ethereum developers. Tokens are smart contract state, managed via contract calls.
+>
+> **When to use which:** Use HTS (1A) unless the user specifically asks for EVM, Solidity, ERC-20, or smart contract-based tokens. HTS is Hedera-native, faster, cheaper, and doesn't require contract deployment.
+
+### Variant 1A: HTS Token Launchpad (Default)
+
+**Hedera Service:** Hedera Token Service (HTS) — native token primitives, no smart contracts.
+
 **Plugins Required:**
 ```typescript
 import {
@@ -93,16 +103,60 @@ User fills token form → POST /api/tokens/create → coreTokenPlugin.CREATE_FUN
   "name": "DemoToken",
   "symbol": "DMT",
   "initialSupply": 10000,
-  "decimals": 2,
+  "decimals": 0,
   "supplyKey": "302e020100300506..."
 }
 ```
 
 > The `supplyKey` is generated during creation and must be sent back in mint requests. Store it client-side (in React state) for the session. In a production app, store it securely server-side.
 
-**MCP Seeding:** After building, create a test token "DemoToken" (symbol: DMT, supply: 10000, decimals: 2) to populate the UI immediately.
+**MCP Seeding:** After building, create a test token "DemoToken" (symbol: DMT, supply: 10000, decimals: 0) to populate the UI immediately.
 
 **Demo Prompt:** `demos/token-launchpad/PROMPT.md`
+
+### Variant 1B: EVM Token Launchpad (Smart Contracts)
+
+**Hedera Service:** Hedera EVM — Solidity ERC-20 smart contracts deployed on Hedera's EVM-compatible layer.
+
+**Plugins Required:**
+```typescript
+import {
+  coreEVMPlugin,
+  coreEVMQueryPlugin,
+  coreAccountQueryPlugin,
+} from 'hedera-agent-kit';
+```
+
+**API Routes:**
+
+| Method | Route | Action | Agent Kit Tool |
+|--------|-------|--------|----------------|
+| `POST` | `/api/tokens/create` | Deploy ERC-20 contract | `CREATE_ERC20_TOOL` |
+| `POST` | `/api/tokens/transfer` | Transfer ERC-20 tokens | `TRANSFER_ERC20_TOOL` |
+| `GET` | `/api/account/balance` | Get HBAR balance | `AccountBalanceQuery` |
+
+**Key Differences from HTS:**
+- No separate mint step — total supply is set at deployment and fully minted to the deployer
+- No supply key concept — ERC-20 minting requires a custom `mint()` function in the contract
+- Token addresses are EVM contract IDs, not `0.0.XXXXX` token IDs
+- Transfer uses contract calls, not `TransferTransaction`
+- Decimals default to 18 (Ethereum convention) — override if needed
+
+**Data Flow:**
+```
+User fills form → POST /api/tokens/create → coreEVMPlugin.CREATE_ERC20_TOOL
+  → Deploys Solidity ERC-20 contract → Returns { contractId, transactionId }
+  → UI shows token card with contract address and HashScan link
+
+Transfer: POST /api/tokens/transfer → TRANSFER_ERC20_TOOL (contractId, toAddress, amount)
+```
+
+**UI:** Same component structure as Variant 1A, but:
+- Remove the "Mint Supply" dialog (ERC-20 supply is fixed at deploy)
+- Token cards show contract ID instead of token ID
+- Transfer dialog accepts either `0.0.XXXXX` or `0x...` EVM addresses
+
+**When users ask for EVM:** Build this variant. Mention that HTS is also available as the native, lower-cost alternative.
 
 ---
 
