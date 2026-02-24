@@ -1,441 +1,422 @@
 # App Blueprints
 
-Pre-designed app architectures for Hedera-powered frontends. Each blueprint is a complete specification you can build from. Pick the blueprint that matches the user's request, or adapt one as a starting point.
+Two demo architectures for Hedera-powered frontends — each showcasing a distinct way to use the Hedera Agent Kit.
+
+## Two Categories
+
+| | Category A: "Built with Agent Kit" | Category B: "Powered by Agent Kit" |
+|---|---|---|
+| **Pattern** | Multi-plugin orchestration — fixed pipeline | Runtime AI agent — LLM chooses tools dynamically |
+| **LLM at runtime?** | No | Yes |
+| **Pipeline** | Predefined steps execute in sequence | Agent reasons and chains tools autonomously |
+| **Why Agent Kit?** | Plugins provide capabilities impossible with raw SDK | Agent Kit IS the runtime — LLM + tools |
+| **Env vars** | Hedera credentials only | Hedera credentials + LLM API key |
+
+Both demos feature a **pipeline visualizer** showing each agent kit tool call executing in real-time.
 
 ---
 
-## Blueprint 1: Token Launchpad
+## Blueprint 1: Meme Coin Launchpad (Category A — Regular App)
 
-**Description:** Create fungible tokens with custom parameters, mint additional supply, and transfer to other accounts — all from a polished UI.
+**One-line pitch:** One-click meme token launch with bonding curve, community governance, and DEX liquidity — chaining 3 plugins in a visible pipeline.
 
-> **Two variants available:**
-> - **1A: HTS (Hedera Token Service)** — Default. Uses native Hedera token primitives (`TokenCreateTransaction`, `TokenMintTransaction`). No smart contracts needed. Tokens are first-class Hedera entities with built-in compliance features.
-> - **1B: EVM (Smart Contracts)** — Uses Solidity ERC-20 contracts deployed via `CREATE_ERC20_TOOL`. Familiar to Ethereum developers. Tokens are smart contract state, managed via contract calls.
->
-> **When to use which:** Use HTS (1A) unless the user specifically asks for EVM, Solidity, ERC-20, or smart contract-based tokens. HTS is Hedera-native, faster, cheaper, and doesn't require contract deployment.
+**Hedera Services:** HTS (tokens via Memejob), HCS (community topic), DeFi (SaucerSwap liquidity)
 
-### Variant 1A: HTS Token Launchpad (Default)
+**Why it needs the Agent Kit:** Memejob plugin is the only way to create bonding curve tokens. SaucerSwap plugin is the only way to add DEX liquidity programmatically. Combining these with HCS topic creation in one pipeline is multi-plugin orchestration that raw SDK can't do.
 
-**Hedera Service:** Hedera Token Service (HTS) — native token primitives, no smart contracts.
-
-**Plugins Required:**
-```typescript
-import {
-  coreTokenPlugin,
-  coreTokenQueryPlugin,
-  coreAccountQueryPlugin,
-} from 'hedera-agent-kit';
+**Required env vars:**
+```env
+HEDERA_OPERATOR_ID=0.0.XXXXX
+HEDERA_OPERATOR_KEY=302e...
+HEDERA_NETWORK=testnet
+NEXT_PUBLIC_HEDERA_NETWORK=testnet
 ```
+No LLM API key needed.
 
-**API Routes:**
+### Plugins Required
 
-| Method | Route | Action |
-|--------|-------|--------|
-| `POST` | `/api/tokens/create` | Create fungible token (name, symbol, supply, decimals) |
-| `POST` | `/api/tokens/mint` | Mint additional supply (tokenId, amount, supplyKey) |
-| `POST` | `/api/tokens/transfer` | Transfer tokens (tokenId, toAccountId, amount) |
-| `GET` | `/api/account/balance` | Get HBAR and token balances |
-| `GET` | `/api/account/tokens` | Get all tokens with metadata from Mirror Node |
-
-**Critical Implementation Notes:**
-
-1. **Supply key is required for minting.** When creating a token with `TokenCreateTransaction`, you must call `.setSupplyKey(key)` — otherwise `TokenMintTransaction` will fail with `TOKEN_HAS_NO_SUPPLY_KEY`. Generate a key with `PrivateKey.generateECDSA()` and store it (returned to the client for use in mint requests).
-
-2. **`setInitialSupply()` expects the smallest unit.** For a token with `decimals: 2` and initial supply of `10000`, pass `10000 * 10^2 = 1000000` to `setInitialSupply()`. The same applies to `TokenMintTransaction.setAmount()` and `TransferTransaction.addTokenTransfer()`.
-
-3. **`receipt.totalSupply` can be null.** After minting, always use `receipt.totalSupply?.toString() ?? "unknown"` — the SDK types allow null.
-
-**UI Components:**
-1. Token creation form — name, symbol, initial supply, decimals fields
-2. Token card grid — shows all created tokens with name, symbol, supply, token ID
-3. Mint dialog — select token, enter amount, submit
-4. Transfer dialog — select token, enter recipient `0.0.XXXXX`, enter amount
-5. Sidebar panel — HBAR balance, total token count, operator account ID
-6. Transaction history — list of recent operations with HashScan links
-
-**Next.js File Structure:**
-```
-src/
-├── app/
-│   ├── page.tsx                    # Main dashboard with token grid
-│   └── api/
-│       ├── tokens/
-│       │   ├── create/route.ts     # POST: create token
-│       │   ├── mint/route.ts       # POST: mint supply
-│       │   └── transfer/route.ts   # POST: transfer tokens
-│       └── account/
-│           └── balance/route.ts    # GET: account balances
-├── components/
-│   ├── token-create-form.tsx
-│   ├── token-card.tsx
-│   ├── token-grid.tsx
-│   ├── mint-dialog.tsx
-│   ├── transfer-dialog.tsx
-│   ├── balance-sidebar.tsx
-│   └── transaction-history.tsx
-└── lib/
-    ├── hedera.ts                   # Client singleton
-    └── types.ts                    # Shared TypeScript types
-```
-
-**Data Flow (Pattern 1 — Direct SDK):**
-```
-User fills token form → POST /api/tokens/create → TokenCreateTransaction (with supplyKey)
-  → Hedera returns token ID → API returns { tokenId, transactionId, supplyKey }
-  → UI adds token card to grid, stores supplyKey in state, shows success toast with HashScan link
-
-Mint flow: User opens mint dialog → POST /api/tokens/mint (tokenId, amount, supplyKey)
-  → TokenMintTransaction (signed with supplyKey) → receipt with new totalSupply
-```
-
-**Data Flow (Pattern 2 — Agent Kit):**
-```
-User fills token form → POST /api/tokens/create → coreTokenPlugin.CREATE_FUNGIBLE_TOKEN_TOOL
-  → Hedera returns token ID → API returns { tokenId, transactionId }
-  → UI adds token card to grid, shows success toast with HashScan link
-```
-
-**Sample Response — Token Creation:**
-```json
-{
-  "tokenId": "0.0.12345",
-  "transactionId": "0.0.98765@1234567890.123456789",
-  "name": "DemoToken",
-  "symbol": "DMT",
-  "initialSupply": 10000,
-  "decimals": 0,
-  "supplyKey": "302e020100300506..."
-}
-```
-
-> The `supplyKey` is generated during creation and must be sent back in mint requests. Store it client-side (in React state) for the session. In a production app, store it securely server-side.
-
-**MCP Seeding:** After building, create a test token "DemoToken" (symbol: DMT, supply: 10000, decimals: 0) to populate the UI immediately.
-
-**Demo Prompt:** `demos/token-launchpad/PROMPT.md`
-
-### Variant 1B: EVM Token Launchpad (Smart Contracts)
-
-**Hedera Service:** Hedera EVM — Solidity ERC-20 smart contracts deployed on Hedera's EVM-compatible layer.
-
-**Plugins Required:**
-```typescript
-import {
-  coreEVMPlugin,
-  coreEVMQueryPlugin,
-  coreAccountQueryPlugin,
-} from 'hedera-agent-kit';
-```
-
-**API Routes:**
-
-| Method | Route | Action | Agent Kit Tool |
-|--------|-------|--------|----------------|
-| `POST` | `/api/tokens/create` | Deploy ERC-20 contract | `CREATE_ERC20_TOOL` |
-| `POST` | `/api/tokens/transfer` | Transfer ERC-20 tokens | `TRANSFER_ERC20_TOOL` |
-| `GET` | `/api/account/balance` | Get HBAR balance | `AccountBalanceQuery` |
-
-**Key Differences from HTS:**
-- No separate mint step — total supply is set at deployment and fully minted to the deployer
-- No supply key concept — ERC-20 minting requires a custom `mint()` function in the contract
-- Token addresses are EVM contract IDs, not `0.0.XXXXX` token IDs
-- Transfer uses contract calls, not `TransferTransaction`
-- Decimals default to 18 (Ethereum convention) — override if needed
-
-**Data Flow:**
-```
-User fills form → POST /api/tokens/create → coreEVMPlugin.CREATE_ERC20_TOOL
-  → Deploys Solidity ERC-20 contract → Returns { contractId, transactionId }
-  → UI shows token card with contract address and HashScan link
-
-Transfer: POST /api/tokens/transfer → TRANSFER_ERC20_TOOL (contractId, toAddress, amount)
-```
-
-**UI:** Same component structure as Variant 1A, but:
-- Remove the "Mint Supply" dialog (ERC-20 supply is fixed at deploy)
-- Token cards show contract ID instead of token ID
-- Transfer dialog accepts either `0.0.XXXXX` or `0x...` EVM addresses
-
-**When users ask for EVM:** Build this variant. Mention that HTS is also available as the native, lower-cost alternative.
-
----
-
-## Blueprint 2: Wallet Dashboard
-
-**Description:** Look up any Hedera account and view its full portfolio — HBAR balance, fungible tokens, NFTs, and recent transactions.
-
-**Plugins Required:**
-```typescript
-import {
-  coreAccountQueryPlugin,
-  coreTokenQueryPlugin,
-  coreMiscQueriesPlugin,
-} from 'hedera-agent-kit';
-```
-
-**Primary Data Source:** Mirror Node REST API (read-heavy, no private key needed for queries).
-
-**API Routes:**
-
-| Method | Route | Action |
-|--------|-------|--------|
-| `GET` | `/api/account/[accountId]` | Get account info (balance, keys, creation date) |
-| `GET` | `/api/account/[accountId]/tokens` | Get all fungible token holdings |
-| `GET` | `/api/account/[accountId]/nfts` | Get all NFTs owned |
-| `GET` | `/api/account/[accountId]/transactions` | Get recent transactions |
-
-**UI Components:**
-1. Search bar — enter any `0.0.XXXXX` account ID
-2. Account overview card — HBAR balance, account ID, key type, creation date
-3. Token portfolio table — sortable by name, symbol, balance, token ID
-4. NFT gallery grid — thumbnail, collection name, serial number
-5. Transaction history timeline — timestamp, type, status, HashScan links
-6. Popular accounts section — pre-loaded testnet accounts for quick exploration
-
-**Next.js File Structure:**
-```
-src/
-├── app/
-│   ├── page.tsx                         # Search + default account view
-│   ├── account/
-│   │   └── [accountId]/
-│   │       └── page.tsx                 # Account detail page
-│   └── api/
-│       └── account/
-│           └── [accountId]/
-│               ├── route.ts             # GET: account info
-│               ├── tokens/route.ts      # GET: token balances
-│               ├── nfts/route.ts        # GET: NFTs
-│               └── transactions/route.ts # GET: transactions
-├── components/
-│   ├── account-search.tsx
-│   ├── account-card.tsx
-│   ├── token-table.tsx
-│   ├── nft-gallery.tsx
-│   ├── transaction-timeline.tsx
-│   └── popular-accounts.tsx
-└── lib/
-    ├── mirror.ts                        # Mirror Node API helpers
-    └── types.ts
-```
-
-**Data Flow:**
-```
-User enters account ID → GET /api/account/[id] → Mirror Node API /accounts/{id}
-  → Returns account data → UI renders overview card
-  → Parallel fetches: /tokens, /nfts, /transactions → UI renders all sections
-```
-
-**Sample Response — Mirror Node Account:**
-```json
-{
-  "account": "0.0.12345",
-  "balance": { "balance": 125500000000, "timestamp": "1234567890.123456789" },
-  "key": { "_type": "ED25519", "key": "302a300506..." },
-  "created_timestamp": "1234567890.000000000"
-}
-```
-
-**Sample Response — Mirror Node Token Balances:**
-```json
-{
-  "tokens": [
-    { "token_id": "0.0.11111", "balance": 5000, "decimals": 2 },
-    { "token_id": "0.0.22222", "balance": 100, "decimals": 0 }
-  ]
-}
-```
-
-**MCP Seeding:** Query the operator's account to get real data for the initial view.
-
-**Demo Prompt:** `demos/wallet-dashboard/PROMPT.md`
-
----
-
-## Blueprint 3: HCS Message Board
-
-**Description:** Decentralized message board using Hedera Consensus Service — create topics, post messages, view message history with timestamps and sequence numbers.
-
-**Plugins Required:**
 ```typescript
 import {
   coreConsensusPlugin,
-  coreConsensusQueryPlugin,
+  coreTokenQueryPlugin,
+  AgentMode,
 } from 'hedera-agent-kit';
+import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
+import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
 ```
 
-**API Routes:**
+### Pipeline Steps
+
+User fills a config form and clicks "Launch". Six steps execute visually:
+
+| Step | Tool | Plugin | Description | Output |
+|------|------|--------|-------------|--------|
+| 1 | `memejob_create` | Memejob | Create meme token with bonding curve | `tokenId`, bonding curve params |
+| 2 | `memejob_buy` | Memejob | Buy creator's initial position | Tokens acquired, HBAR spent |
+| 3 | `get_token_info_query_tool` | Core Token Query | Confirm token state (supply, metadata) | Token info |
+| 4 | `create_topic_tool` | Core Consensus | Create community HCS topic | `topicId` |
+| 5 | `submit_topic_message_tool` | Core Consensus | Post launch announcement with token/topic details | Message sequence number |
+| 6 | `saucerswap_add_liquidity` | SaucerSwap | Seed initial DEX liquidity (token + HBAR pair) | LP token info, pool details |
+
+### Pipeline Step Definitions (for `executePipeline()`)
+
+```typescript
+function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
+  return [
+    {
+      stepId: 'create-token',
+      tool: 'memejob_create',
+      service: 'HTS',
+      params: {
+        name: config.tokenName,
+        symbol: config.tokenSymbol,
+        description: config.description,
+        imageUrl: config.imageUrl,
+      },
+    },
+    {
+      stepId: 'buy-initial',
+      tool: 'memejob_buy',
+      service: 'DeFi',
+      params: {
+        tokenId: '{{create-token.tokenId}}',
+        hbarAmount: config.initialBuyHbar,
+      },
+    },
+    {
+      stepId: 'verify-token',
+      tool: 'get_token_info_query_tool',
+      service: 'Query',
+      params: {
+        tokenId: '{{create-token.tokenId}}',
+      },
+    },
+    {
+      stepId: 'create-topic',
+      tool: 'create_topic_tool',
+      service: 'HCS',
+      params: {
+        memo: `Community: ${config.tokenName} ($${config.tokenSymbol})`,
+      },
+    },
+    {
+      stepId: 'announce',
+      tool: 'submit_topic_message_tool',
+      service: 'HCS',
+      params: {
+        topicId: '{{create-topic.topicId}}',
+        message: JSON.stringify({
+          event: 'TOKEN_LAUNCH',
+          tokenId: '{{create-token.tokenId}}',
+          name: config.tokenName,
+          symbol: config.tokenSymbol,
+          topicId: '{{create-topic.topicId}}',
+          timestamp: new Date().toISOString(),
+        }),
+      },
+    },
+    {
+      stepId: 'add-liquidity',
+      tool: 'saucerswap_add_liquidity',
+      service: 'DeFi',
+      params: {
+        tokenAId: '{{create-token.tokenId}}',
+        tokenBId: 'HBAR',
+        amountA: config.liquidityTokenAmount,
+        amountB: config.liquidityHbarAmount,
+      },
+    },
+  ];
+}
+```
+
+### API Routes
 
 | Method | Route | Action |
 |--------|-------|--------|
-| `POST` | `/api/topics/create` | Create new topic (memo) |
-| `POST` | `/api/topics/[topicId]/messages` | Submit message to topic |
-| `GET` | `/api/topics/[topicId]/messages` | Get messages (Mirror Node polling) |
-| `GET` | `/api/topics/[topicId]` | Get topic info |
+| `POST` | `/api/pipeline` | Execute the 6-step launch pipeline (SSE stream) |
+| `GET` | `/api/account/balance` | Get operator HBAR balance |
 
-**UI Components:**
-1. Topic list sidebar — shows all topics with memo and topic ID
-2. Create topic form — memo/title input
-3. Message feed — messages with content, sequence number, timestamp
-4. Compose input — text input with submit button
-5. Auto-refresh toggle — polling interval control (default: 5 seconds)
-6. Topic header — active topic ID and memo
+### UI Layout
 
-**Next.js File Structure:**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Header: "Meme Coin Launchpad"  [Testnet badge]                  │
+├─────────────────────────┬────────────────────────────────────────┤
+│  Config Form (left)     │  Pipeline Visualizer (right)           │
+│                         │                                        │
+│  Token Name: [_______]  │  Step 1: memejob_create     ✓ 2.3s    │
+│  Symbol:     [_______]  │  Step 2: memejob_buy         ✓ 1.8s   │
+│  Description:[_______]  │  Step 3: get_token_info...   ⏳        │
+│  Image URL:  [_______]  │  Step 4: create_topic_tool   ○         │
+│  Initial Buy:[___] HBAR │  Step 5: submit_topic_...    ○         │
+│  Liquidity:  [___] HBAR │  Step 6: saucerswap_add...   ○         │
+│                         │                                        │
+│  [🚀 Launch Token]      │  Each step: collapsible params/result  │
+├─────────────────────────┴────────────────────────────────────────┤
+│  Launch Card (appears after pipeline completes)                   │
+│  Token: $MEME (0.0.12345) | Topic: 0.0.67890 | Pool: active     │
+│  [HashScan] [Community Topic] [Trade on SaucerSwap]              │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Next.js File Structure
+
 ```
 src/
 ├── app/
-│   ├── page.tsx                         # Split-pane: sidebar + message feed
+│   ├── layout.tsx                     # Root layout with dark theme, network badge
+│   ├── page.tsx                       # Main page: config form + pipeline visualizer
 │   └── api/
-│       └── topics/
-│           ├── create/route.ts          # POST: create topic
-│           └── [topicId]/
-│               ├── route.ts             # GET: topic info
-│               └── messages/
-│                   ├── route.ts         # GET: messages (Mirror Node)
-│                   └── send/route.ts    # POST: submit message
+│       ├── pipeline/
+│       │   └── route.ts              # POST: execute 6-step launch pipeline (SSE)
+│       └── account/
+│           └── balance/route.ts      # GET: operator HBAR balance
 ├── components/
-│   ├── topic-list.tsx
-│   ├── create-topic-form.tsx
-│   ├── message-feed.tsx
-│   ├── compose-input.tsx
-│   └── auto-refresh-toggle.tsx
-└── lib/
-    ├── hedera.ts
-    ├── mirror.ts
-    └── types.ts
+│   ├── launch-form.tsx               # Token config form
+│   ├── pipeline-visualizer.tsx       # Step-by-step execution display
+│   ├── pipeline-step-card.tsx        # Individual step card with status
+│   ├── launch-card.tsx               # Summary card after completion
+│   ├── service-badge.tsx             # HTS/HCS/DeFi colored badges
+│   └── network-badge.tsx             # Testnet/mainnet indicator
+├── hooks/
+│   └── use-pipeline.ts              # SSE consumer hook
+├── lib/
+│   ├── toolkit.ts                    # Agent Kit toolkit with 4 plugins
+│   ├── pipeline.ts                   # Pipeline execution engine
+│   └── hedera.ts                     # Client singleton
+└── types/
+    └── pipeline.ts                   # Shared pipeline types
 ```
 
-**Data Flow:**
-```
-User posts message → POST /api/topics/[id]/messages/send → SUBMIT_TOPIC_MESSAGE_TOOL
-  → Hedera consensus → Success toast
-  → Auto-refresh polls GET /api/topics/[id]/messages → Mirror Node /topics/{id}/messages
-  → Messages decoded from base64 → UI renders message feed
-```
+### Sample Responses
 
-**Important:** HCS messages are base64-encoded on the Mirror Node. Always decode before displaying:
-```typescript
-const decoded = Buffer.from(message.message, 'base64').toString('utf-8');
-```
-
-**Sample Response — Mirror Node Topic Messages:**
+**Pipeline Step Event (SSE):**
 ```json
 {
-  "messages": [
-    {
-      "consensus_timestamp": "1234567890.123456789",
-      "message": "SGVsbG8gSGVkZXJhIQ==",
-      "payer_account_id": "0.0.98765",
-      "running_hash": "...",
-      "sequence_number": 1,
-      "topic_id": "0.0.55555"
-    }
+  "stepId": "create-token",
+  "tool": "memejob_create",
+  "service": "HTS",
+  "status": "success",
+  "result": {
+    "tokenId": "0.0.12345",
+    "name": "DogeCoin2",
+    "symbol": "DOGE2",
+    "bondingCurve": { "type": "linear", "slope": 0.001 }
+  },
+  "elapsed": 2340
+}
+```
+
+**Launch Card Data (after pipeline completes):**
+```json
+{
+  "tokenId": "0.0.12345",
+  "tokenName": "DogeCoin2",
+  "tokenSymbol": "DOGE2",
+  "topicId": "0.0.67890",
+  "poolInfo": {
+    "lpTokenId": "0.0.11111",
+    "tokenAAmount": 10000,
+    "tokenBAmount": 50
+  },
+  "hashScanLinks": [
+    { "label": "Token", "url": "https://hashscan.io/testnet/token/0.0.12345" },
+    { "label": "Topic", "url": "https://hashscan.io/testnet/topic/0.0.67890" }
   ]
 }
 ```
 
-**MCP Seeding:** Create a topic "General Discussion", post 3 test messages, verify they appear in the feed.
-
-**Demo Prompt:** `demos/hcs-message-board/PROMPT.md`
+**Demo Prompt:** `demos/meme-coin-launchpad/PROMPT.md`
 
 ---
 
-## Blueprint 4: NFT Gallery & Minter
+## Blueprint 2: Hedera DeFi Agent (Category B — Agentic App)
 
-**Description:** Create NFT collections, mint NFTs with metadata, browse in a gallery view.
+**One-line pitch:** Voice and text-enabled DeFi assistant — tell it what to do in natural language and watch it reason, select tools, and execute across all Hedera services.
 
-**Plugins Required:**
-```typescript
-import {
-  coreTokenPlugin,
-  coreTokenQueryPlugin,
-} from 'hedera-agent-kit';
+**Hedera Services:** ALL — HTS, HCS, HSCS (via EVM tools), Mirror Node, DeFi (SaucerSwap, Bonzo, Memejob)
+
+**Why it needs the Agent Kit:** This IS the agent kit. The app initializes a LangChain agent with hedera-agent-kit tools, feeds it natural language from the user, and the LLM reasons about which tools to call. Multi-step operations are handled by the agent autonomously.
+
+**Required env vars:**
+```env
+HEDERA_OPERATOR_ID=0.0.XXXXX
+HEDERA_OPERATOR_KEY=302e...
+HEDERA_NETWORK=testnet
+NEXT_PUBLIC_HEDERA_NETWORK=testnet
+
+# LLM Provider (pick one):
+OPENAI_API_KEY=sk-...          # or
+ANTHROPIC_API_KEY=sk-ant-...   # or
+GROQ_API_KEY=gsk_...
 ```
 
-**API Routes:**
+### Plugins Required (ALL)
+
+```typescript
+import {
+  coreAccountPlugin, coreAccountQueryPlugin,
+  coreTokenPlugin, coreTokenQueryPlugin,
+  coreConsensusPlugin, coreConsensusQueryPlugin,
+  coreEVMPlugin, coreEVMQueryPlugin,
+  coreMiscQueriesPlugin,
+  AgentMode,
+} from 'hedera-agent-kit';
+import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
+import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
+import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
+```
+
+### Architecture
+
+```
+User (text or voice input)
+  ↓
+POST /api/agent { input: "Swap 100 HBAR for SAUCE" }
+  ↓
+Server: LangChain AgentExecutor with ALL hedera-agent-kit tools
+  ↓
+Agent reasons: "I need to get a quote first, then execute the swap"
+  ↓
+SSE events stream to client:
+  → { status: "Agent is thinking..." }
+  → { tool: "saucerswap_get_quote", input: {...}, output: {...} }
+  → { tool: "saucerswap_swap", input: {...}, output: {...} }
+  → { output: "Swapped 100 HBAR for 2,450 SAUCE. Transaction: 0.0.98765@..." }
+  ↓
+Pipeline visualizer updates in real-time
+Account dashboard auto-refreshes
+```
+
+### Example Interactions
+
+| User Says | Agent Does |
+|-----------|-----------|
+| "What's my HBAR balance?" | Calls `get_hbar_balance_query_tool` |
+| "Create a token called GameCoin with 50000 supply" | Calls `create_fungible_token_tool` |
+| "Swap 100 HBAR for SAUCE on SaucerSwap" | Calls `saucerswap_get_quote` → `saucerswap_swap` |
+| "Borrow 50 USDC on Bonzo using my HBAR as collateral" | Calls `bonzo_supply` (HBAR) → `bonzo_borrow` (USDC) |
+| "Airdrop 100 tokens to these 5 accounts" | Calls `airdrop_fungible_token_tool` |
+| "Launch a meme coin called PEPE" | Calls `memejob_create` |
+| "Create a topic for our community" | Calls `create_topic_tool` |
+| "What tokens do I have?" | Calls `get_account_token_balances_query_tool` |
+
+### API Routes
 
 | Method | Route | Action |
 |--------|-------|--------|
-| `POST` | `/api/nfts/create-collection` | Create NFT collection (name, symbol, maxSupply) |
-| `POST` | `/api/nfts/mint` | Mint NFT with metadata (tokenId, metadata) |
-| `GET` | `/api/nfts/[tokenId]` | Get collection info and all NFTs |
-| `GET` | `/api/nfts/[tokenId]/[serialNumber]` | Get single NFT detail |
+| `POST` | `/api/agent` | Send natural language input, receive SSE stream of agent actions |
+| `GET` | `/api/account/info` | Get operator account info (balance, tokens, recent txns) via Mirror Node |
 
-**UI Components:**
-1. Create collection form — name, symbol, max supply (or infinite toggle)
-2. Collection list sidebar — all created collections with stats
-3. Mint form — metadata fields: name, description, image URL
-4. NFT gallery grid — thumbnails with serial number, name from metadata
-5. NFT detail modal — full metadata, image, HashScan link
-6. Collection stats header — total minted, max supply, collection token ID
+### UI Layout
 
-**NFT Metadata Format:**
-```json
-{
-  "name": "AI Art #1",
-  "description": "A generated artwork",
-  "image": "https://example.com/image.png",
-  "properties": {
-    "artist": "AI Agent",
-    "created": "2025-01-01"
-  }
-}
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Header: "Hedera DeFi Agent"  [Testnet badge]  [LLM: GPT-4o]    │
+├──────────────────────────────────────────────────────────────────┤
+│  Input Bar: [Type a message...                     ] [🎤] [Send] │
+├──────────────────────────────┬───────────────────────────────────┤
+│  Pipeline / Chat (center)    │  Account Dashboard (right)        │
+│                              │                                   │
+│  You: "Swap 100 HBAR for     │  Account: 0.0.12345               │
+│        SAUCE"                │  Balance: 925.5 ℏ                 │
+│                              │                                   │
+│  Agent thinking...           │  Tokens:                          │
+│  ┌─ saucerswap_get_quote ─┐ │  SAUCE    2,450   0.0.67890       │
+│  │ status: ✓  1.2s        │ │  USDC     100     0.0.45678       │
+│  │ quote: 2,450 SAUCE     │ │                                   │
+│  └────────────────────────┘ │  Recent Transactions:              │
+│  ┌─ saucerswap_swap ──────┐ │  SWAP     ✓  just now             │
+│  │ status: ✓  3.1s        │ │  TRANSFER ✓  2 min ago            │
+│  │ txId: 0.0.98765@...    │ │                                   │
+│  └────────────────────────┘ │                                   │
+│                              │                                   │
+│  Agent: "Done! Swapped 100   │  [Auto-refreshes after each       │
+│  HBAR for 2,450 SAUCE."     │   agent operation]                 │
+├──────────────────────────────┴───────────────────────────────────┤
+│  Suggested: "Check my balance" | "Create a token" | "Swap tokens"│
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**Next.js File Structure:**
+### Next.js File Structure
+
 ```
 src/
 ├── app/
-│   ├── page.tsx                         # Gallery with collection sidebar
+│   ├── layout.tsx                     # Root layout with dark theme, providers
+│   ├── page.tsx                       # Main page: input bar + chat/pipeline + dashboard
 │   └── api/
-│       └── nfts/
-│           ├── create-collection/route.ts
-│           ├── mint/route.ts
-│           └── [tokenId]/
-│               ├── route.ts             # GET: collection + NFTs
-│               └── [serialNumber]/
-│                   └── route.ts         # GET: single NFT
+│       ├── agent/
+│       │   └── route.ts              # POST: LangChain agent execution (SSE)
+│       └── account/
+│           └── info/route.ts         # GET: account info via Mirror Node
 ├── components/
-│   ├── collection-form.tsx
-│   ├── collection-sidebar.tsx
-│   ├── mint-form.tsx
-│   ├── nft-gallery-grid.tsx
-│   ├── nft-card.tsx
-│   ├── nft-detail-modal.tsx
-│   └── collection-stats.tsx
-└── lib/
-    ├── hedera.ts
-    ├── mirror.ts
-    └── types.ts
+│   ├── agent-input.tsx               # Text input + mic button + send
+│   ├── pipeline-visualizer.tsx       # Dynamic step display (shared component)
+│   ├── pipeline-step-card.tsx        # Individual step card (shared component)
+│   ├── chat-message.tsx              # User/agent message bubbles
+│   ├── account-dashboard.tsx         # Balance, tokens, recent txns panel
+│   ├── suggested-actions.tsx         # Quick-action suggestion chips
+│   ├── service-badge.tsx             # HTS/HCS/DeFi colored badges
+│   └── network-badge.tsx             # Testnet/mainnet indicator
+├── hooks/
+│   ├── use-agent.ts                  # Agent SSE consumer hook
+│   └── use-voice-input.ts           # Web Speech API voice input
+├── lib/
+│   ├── agent.ts                      # LangChain agent setup (all plugins + LLM)
+│   ├── toolkit.ts                    # Agent Kit toolkit with ALL plugins
+│   ├── mirror.ts                     # Mirror Node API helpers
+│   └── hedera.ts                     # Client singleton
+└── types/
+    ├── agent.ts                      # Agent-specific types
+    └── pipeline.ts                   # Shared pipeline types
 ```
 
-**Data Flow:**
-```
-User fills mint form → POST /api/nfts/mint → MINT_NON_FUNGIBLE_TOKEN_TOOL (metadata as JSON string)
-  → Hedera returns serial number → API returns { tokenId, serialNumber, transactionId }
-  → UI adds NFT card to gallery, shows success toast
+### Agent Setup (`src/lib/agent.ts`)
+
+See `references/agent-kit-sdk-reference.md` → "LangChain Agent Integration" for the full initialization code. Key points:
+
+1. Auto-detect LLM provider from env vars (`OPENAI_API_KEY` → OpenAI, etc.)
+2. Load ALL plugins (core + SaucerSwap + Bonzo + Memejob)
+3. Use `createToolCallingAgent` + `AgentExecutor` with `returnIntermediateSteps: true`
+4. System prompt tells the agent it's a Hedera DeFi assistant
+
+### SSE Event Format
+
+```json
+// Status update
+{ "event": "status", "data": { "message": "Agent is thinking..." } }
+
+// Tool call
+{ "event": "tool_call", "data": {
+    "tool": "saucerswap_swap",
+    "input": { "tokenInId": "HBAR", "tokenOutId": "0.0.67890", "amountIn": 100 },
+    "output": { "transactionId": "0.0.98765@1234567890.123", "amountOut": 2450 }
+  }
+}
+
+// Final result
+{ "event": "result", "data": { "output": "Swapped 100 HBAR for 2,450 SAUCE." } }
+
+// Done
+{ "event": "done", "data": {} }
 ```
 
-**Sample Response — NFT Mint:**
+### Sample Account Dashboard Response (Mirror Node)
+
 ```json
 {
-  "tokenId": "0.0.33333",
-  "serialNumber": 1,
-  "transactionId": "0.0.98765@1234567890.123456789",
-  "metadata": {
-    "name": "AI Art #1",
-    "description": "A generated artwork",
-    "image": "https://example.com/image.png"
-  }
+  "accountId": "0.0.12345",
+  "hbarBalance": "925.50",
+  "tokens": [
+    { "tokenId": "0.0.67890", "name": "SAUCE", "symbol": "SAUCE", "balance": 2450, "decimals": 6 },
+    { "tokenId": "0.0.45678", "name": "USDC", "symbol": "USDC", "balance": 100, "decimals": 6 }
+  ],
+  "recentTransactions": [
+    { "transactionId": "0.0.98765@1234567890.123", "type": "CRYPTOTRANSFER", "status": "SUCCESS", "timestamp": "2025-01-15T10:30:00Z" }
+  ]
 }
 ```
 
-**Image Handling:** Use placeholder images when no image URL is provided:
-```typescript
-const imageUrl = metadata.image || `https://placehold.co/400x400?text=NFT+%23${serialNumber}`;
-```
-
-**MCP Seeding:** Create collection "AI Art Collection" (AIART, infinite supply), mint 2-3 NFTs with sample metadata, verify gallery renders them.
-
-**Demo Prompt:** `demos/nft-gallery/PROMPT.md`
+**Demo Prompt:** `demos/defi-agent/PROMPT.md`

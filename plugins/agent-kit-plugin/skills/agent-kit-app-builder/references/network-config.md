@@ -93,6 +93,51 @@ export { client, network, operatorId };
 
 The `parsePrivateKey()` helper above auto-detects DER vs hex. Use it everywhere instead of hardcoding a specific format.
 
+## LLM Provider Configuration (Category B Apps Only)
+
+Category B (agentic) apps require an LLM API key to power the AI agent. Category A (regular) apps do **not** need any LLM key.
+
+### Environment Variables
+
+```env
+# Pick ONE provider — the app auto-detects which key is set:
+OPENAI_API_KEY=sk-...              # OpenAI (GPT-4o)
+ANTHROPIC_API_KEY=sk-ant-...       # Anthropic (Claude Sonnet)
+GROQ_API_KEY=gsk_...               # Groq (Llama 3.3 70B)
+```
+
+### Provider Comparison
+
+| Provider | Model | Speed | Cost | Best For |
+|----------|-------|-------|------|----------|
+| **Groq** | Llama 3.3 70B | Fastest | Free tier available | Prototyping, demos, speed-sensitive |
+| **OpenAI** | GPT-4o | Fast | ~$2.50/1M input tokens | Reliability, broad tool-calling support |
+| **Anthropic** | Claude Sonnet | Fast | ~$3/1M input tokens | Complex reasoning, multi-step chains |
+
+### LangChain Dependencies by Provider
+
+```bash
+# OpenAI
+npm install @langchain/openai
+
+# Anthropic
+npm install @langchain/anthropic
+
+# Groq (fast, free tier)
+npm install @langchain/groq
+```
+
+### How to Choose
+
+- **Just want it to work?** → Use **Groq** (free tier, fastest inference)
+- **Production reliability?** → Use **OpenAI** (most mature tool-calling)
+- **Complex multi-step reasoning?** → Use **Anthropic** (best at chaining operations)
+- **Free/local?** → Use **Ollama** with a local model (requires `@langchain/ollama`, no API key needed, but tool-calling quality varies)
+
+> **Tip:** For hackathons and demos, Groq's free tier is ideal — no credit card needed and responses are near-instant.
+
+---
+
 ## MCP Server Network Flag
 
 ```bash

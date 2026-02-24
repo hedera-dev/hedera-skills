@@ -17,9 +17,15 @@ This is an AI agent skill that generates complete Next.js + Hedera applications 
 
 3. **Configure environment variables.** Copy the template and fill in your credentials:
    ```env
+   # Required for ALL apps:
    HEDERA_OPERATOR_ID=0.0.XXXXX
    HEDERA_OPERATOR_KEY=302e020100300506...
    HEDERA_NETWORK=testnet
+
+   # Required for Category B (agentic) apps only — pick one:
+   # OPENAI_API_KEY=sk-...
+   # ANTHROPIC_API_KEY=sk-ant-...
+   # GROQ_API_KEY=gsk_...
    ```
    See [`templates/env.example`](templates/env.example) for the full template.
 
@@ -33,25 +39,25 @@ This is an AI agent skill that generates complete Next.js + Hedera applications 
 
 6. **The agent builds the app** — scaffolds the project, writes all code, and seeds it with real testnet data via MCP.
 
+## Two Ways to Build
+
+| | Category A: "Built with Agent Kit" | Category B: "Powered by Agent Kit" |
+|---|---|---|
+| **Pattern** | Multi-plugin orchestration — fixed pipeline | Runtime AI agent — LLM chooses tools |
+| **LLM at runtime?** | No | Yes |
+| **Why Agent Kit?** | Plugins provide capabilities impossible with raw SDK | Agent Kit IS the runtime — LLM + tools |
+| **Env vars** | Hedera credentials only | Hedera credentials + LLM API key |
+
+Both categories feature a **pipeline visualizer** showing each agent kit tool call executing in real-time.
+
 ## What You Can Build
 
-| Blueprint | Description | Hedera Services |
-|-----------|-------------|-----------------|
-| **Token Launchpad** | Create, mint, and transfer fungible tokens from a polished UI | HTS (default) or EVM variant |
-| **Wallet Dashboard** | Read-only account portfolio viewer — balances, tokens, NFTs, transactions | Mirror Node REST API |
-| **HCS Message Board** | Decentralized message board with real-time polling | Hedera Consensus Service |
-| **NFT Gallery & Minter** | Create NFT collections, mint with metadata, browse in a gallery | HTS (NFTs) |
+| Blueprint | Category | Description | Hedera Services | LLM Key? |
+|-----------|----------|-------------|-----------------|----------|
+| **Meme Coin Launchpad** | A | One-click meme token launch with bonding curve, community topic, and DEX liquidity — chaining 3 plugins in a visible pipeline | HTS (Memejob), HCS, DeFi (SaucerSwap) | No |
+| **Hedera DeFi Agent** | B | Voice/text DeFi assistant — AI agent executes across all Hedera services via natural language | ALL (HTS, HCS, HSCS, Mirror Node, SaucerSwap, Bonzo, Memejob) | Yes |
 
 These are starting points. The skill can build any Hedera-powered frontend — custom apps are supported by combining patterns from the [references](references/).
-
-## HTS vs EVM
-
-The Token Launchpad supports two paths:
-
-- **HTS (default)** — Native Hedera tokens using `TokenCreateTransaction` / `TokenMintTransaction`. No smart contracts needed. Cheaper, faster, and tokens are first-class Hedera entities with built-in compliance features.
-- **EVM** — Solidity ERC-20 contracts deployed on Hedera's EVM layer via `CREATE_ERC20_TOOL`. Familiar to Ethereum developers. Total supply is fixed at deployment.
-
-**When to use which:** Use HTS unless you specifically need EVM, Solidity, ERC-20, or smart contract-based tokens.
 
 ## How the MCP Server Works
 
@@ -64,7 +70,7 @@ Agent builds app → Uses MCP to create test token on testnet
   → Agent verifies UI works with actual blockchain state
 ```
 
-For example, after scaffolding a token launchpad, the agent calls `create_fungible_token_tool` via MCP to create a "DemoToken" on testnet, then the UI immediately displays it with real token ID, supply, and HashScan links.
+For example, after scaffolding the Meme Coin Launchpad, the agent calls MCP tools to verify the operator account has sufficient HBAR balance, then the UI is ready to execute a real launch pipeline.
 
 See [`references/mcp-live-usage.md`](references/mcp-live-usage.md) for full setup details and usage patterns.
 
@@ -75,23 +81,17 @@ agent-kit-app-builder/
 ├── README.md                    ← You are here
 ├── SKILL.md                     # AI agent instructions (the brain)
 ├── references/                  # Supporting documentation
-│   ├── app-blueprints.md        # 4 app architectures with full specs
-│   ├── frontend-patterns.md     # React/Next.js + Hedera patterns
-│   ├── agent-kit-sdk-reference.md  # hedera-agent-kit API reference
-│   ├── network-config.md        # Environment & network setup
+│   ├── app-blueprints.md        # 2 app architectures (Category A & B)
+│   ├── frontend-patterns.md     # React/Next.js + Hedera patterns (5 patterns)
+│   ├── agent-kit-sdk-reference.md  # hedera-agent-kit API + third-party plugins + LangChain
+│   ├── network-config.md        # Environment, network setup, LLM providers
 │   └── mcp-live-usage.md        # MCP server setup & usage patterns
 ├── demos/                       # One-shot demo prompts
 │   ├── README.md                # Demo overview and comparison
-│   ├── token-launchpad/
+│   ├── meme-coin-launchpad/     # Category A demo
 │   │   ├── PROMPT.md            # Paste into your AI agent
 │   │   └── README.md
-│   ├── wallet-dashboard/
-│   │   ├── PROMPT.md
-│   │   └── README.md
-│   ├── hcs-message-board/
-│   │   ├── PROMPT.md
-│   │   └── README.md
-│   └── nft-gallery/
+│   └── defi-agent/              # Category B demo
 │       ├── PROMPT.md
 │       └── README.md
 └── templates/
@@ -108,8 +108,11 @@ agent-kit-app-builder/
 - **Next.js 14+** (App Router) with TypeScript
 - **Tailwind CSS** + **shadcn/ui** for production-quality UI
 - **`@hiero-ledger/sdk`** (formerly `@hashgraph/sdk`) for direct Hedera SDK access
-- **`hedera-agent-kit`** for multi-step operations and MCP server
+- **`hedera-agent-kit`** for multi-step operations, plugins, and MCP server
+- **Third-party plugins:** SaucerSwap (DEX), Bonzo (lending), Memejob (meme tokens)
+- **LangChain** (Category B only) for AI agent framework
 - **Mirror Node REST API** for read-heavy dashboard queries
+- **Web Speech API** (Category B only) for voice input
 
 ## Limitations & Scope
 
@@ -118,6 +121,7 @@ agent-kit-app-builder/
 - **No wallet connect / client-side signing** — uses server-side operator key for all transactions
 - **MCP seeding is optional** but recommended for the best development experience
 - One-shot generation may need **1-2 follow-up iterations** for polish
+- Category B apps require an **LLM API key** (Groq offers a free tier for demos)
 
 ## Troubleshooting
 
@@ -135,8 +139,11 @@ turbopack: { root: path.resolve(__dirname) }
 **`toast` import errors**
 The shadcn `toast` component is deprecated. Use `sonner` instead — simpler API: `toast("message")`. Install with `npx shadcn@latest add sonner --yes`.
 
-**Token mint fails with `TOKEN_HAS_NO_SUPPLY_KEY`**
-Supply key must be set at token creation time via `.setSupplyKey(key)`. You cannot add it after creation. Generate with `PrivateKey.generateECDSA()` and store the key for mint requests.
-
 **Wrong SDK package name**
 Use `@hiero-ledger/sdk`, not `@hashgraph/sdk`. The package was renamed as part of the Hiero transition.
+
+**"No LLM API key found" error (Category B only)**
+Set exactly one of `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GROQ_API_KEY` in `.env.local`. The app auto-detects which provider to use. For free/fast demos, use Groq.
+
+**Agent not calling tools correctly (Category B)**
+Make sure you installed the correct LangChain provider package (`@langchain/openai`, `@langchain/anthropic`, or `@langchain/groq`). Different LLMs have varying tool-calling quality — GPT-4o and Claude Sonnet are most reliable.

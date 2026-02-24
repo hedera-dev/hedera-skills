@@ -197,20 +197,238 @@ These community plugins extend the Agent Kit with DeFi and ecosystem integration
 
 | Plugin | Package | Capabilities |
 |--------|---------|-------------|
-| SaucerSwap | `hak-saucerswap-plugin` | DEX swaps, liquidity pools |
+| SaucerSwap | `hak-saucerswap-plugin` | DEX swaps, liquidity pools, price quotes |
 | Bonzo Finance | `@bonzofinancelabs/hak-bonzo-plugin` | DeFi lending and borrowing |
-| Memejob | `@buidlerlabs/hak-memejob-plugin` | Meme token creation |
+| Memejob | `@buidlerlabs/hak-memejob-plugin` | Meme token creation with bonding curves |
 
 Install and register like any core plugin:
 
 ```typescript
 import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
+import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
+import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
 
 const toolkit = new HederaLangchainToolkit({
   client,
   configuration: {
-    plugins: [...corePlugins, saucerSwapPlugin],
+    plugins: [
+      ...corePlugins,
+      saucerSwapPlugin,
+      bonzoPlugin,
+      memejobPlugin,
+    ],
     context: { mode: AgentMode.AUTONOMOUS },
   },
 });
+```
+
+### SaucerSwap Plugin (`saucerSwapPlugin`)
+
+SaucerSwap is Hedera's leading DEX. All tools operate on testnet or mainnet based on the client's network.
+
+| Tool Name | Params | Description |
+|-----------|--------|-------------|
+| `saucerswap_swap` | `tokenInId: string, tokenOutId: string, amountIn: number, slippage?: number` | Swap tokens on SaucerSwap. Use `"HBAR"` as the token ID for native HBAR. Slippage defaults to 0.5%. |
+| `saucerswap_get_quote` | `tokenInId: string, tokenOutId: string, amountIn: number` | Get a price quote without executing a swap. Returns expected output amount and price impact. |
+| `saucerswap_add_liquidity` | `tokenAId: string, tokenBId: string, amountA: number, amountB: number` | Add liquidity to a token pair pool. Creates the pool if it doesn't exist. Returns LP token info. |
+| `saucerswap_remove_liquidity` | `lpTokenId: string, amount: number` | Remove liquidity by burning LP tokens. Returns withdrawn amounts of both tokens. |
+| `saucerswap_get_pools` | none | List available liquidity pools with TVL, volume, and token pair info. |
+
+### Bonzo Finance Plugin (`bonzoPlugin`)
+
+Bonzo is a DeFi lending/borrowing protocol on Hedera. Users supply collateral and borrow against it.
+
+| Tool Name | Params | Description |
+|-----------|--------|-------------|
+| `bonzo_supply` | `tokenId: string, amount: number` | Supply tokens as collateral to Bonzo. Receives interest-bearing bTokens in return. |
+| `bonzo_borrow` | `tokenId: string, amount: number` | Borrow tokens against existing collateral. Requires sufficient collateral ratio. |
+| `bonzo_repay` | `tokenId: string, amount: number` | Repay borrowed tokens (partial or full). Reduces outstanding debt. |
+| `bonzo_withdraw` | `tokenId: string, amount: number` | Withdraw previously supplied collateral. Fails if it would under-collateralize active borrows. |
+
+### Memejob Plugin (`memejobPlugin`)
+
+Memejob creates meme tokens with built-in bonding curves — a pricing mechanism where token price increases as more tokens are bought.
+
+| Tool Name | Params | Description |
+|-----------|--------|-------------|
+| `memejob_create` | `name: string, symbol: string, description?: string, imageUrl?: string` | Create a new meme token with an automatic bonding curve. Returns tokenId and bonding curve parameters. |
+| `memejob_buy` | `tokenId: string, hbarAmount: number` | Buy meme tokens by spending HBAR. Price determined by bonding curve (more bought = higher price). |
+| `memejob_sell` | `tokenId: string, tokenAmount: number` | Sell meme tokens back for HBAR. Price determined by bonding curve. |
+
+> **Testnet support:** All three plugins support Hedera testnet. SaucerSwap has a testnet DEX deployment. Bonzo has a testnet lending market. Memejob supports testnet token creation.
+
+---
+
+## LangChain Agent Integration
+
+For **agentic apps** (Category B) where an LLM reasons about which tools to call at runtime, use LangChain's agent framework with hedera-agent-kit tools.
+
+### Agent Initialization
+
+```typescript
+import {
+  HederaLangchainToolkit,
+  coreAccountPlugin, coreAccountQueryPlugin,
+  coreTokenPlugin, coreTokenQueryPlugin,
+  coreConsensusPlugin, coreConsensusQueryPlugin,
+  coreEVMPlugin, coreEVMQueryPlugin,
+  coreMiscQueriesPlugin,
+  AgentMode,
+} from 'hedera-agent-kit';
+import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
+import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
+import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
+import { ChatOpenAI } from '@langchain/openai';
+import { ChatAnthropic } from '@langchain/anthropic';
+import { ChatGroq } from '@langchain/groq';
+import { createToolCallingAgent, AgentExecutor } from 'langchain/agents';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { Client, PrivateKey } from '@hiero-ledger/sdk';
+
+// 1. Initialize Hedera client
+const rawKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '');
+const operatorKey = rawKey.startsWith('302')
+  ? PrivateKey.fromStringDer(rawKey)
+  : PrivateKey.fromStringECDSA(rawKey);
+
+const client = Client.forTestnet().setOperator(
+  process.env.HEDERA_OPERATOR_ID!,
+  operatorKey
+);
+
+// 2. Create toolkit with ALL plugins
+const toolkit = new HederaLangchainToolkit({
+  client,
+  configuration: {
+    tools: [],
+    context: { mode: AgentMode.AUTONOMOUS },
+    plugins: [
+      coreAccountPlugin, coreAccountQueryPlugin,
+      coreTokenPlugin, coreTokenQueryPlugin,
+      coreConsensusPlugin, coreConsensusQueryPlugin,
+      coreEVMPlugin, coreEVMQueryPlugin,
+      coreMiscQueriesPlugin,
+      saucerSwapPlugin,
+      bonzoPlugin,
+      memejobPlugin,
+    ],
+  },
+});
+
+// 3. Choose LLM provider based on available env var
+function createLLM() {
+  if (process.env.OPENAI_API_KEY) {
+    return new ChatOpenAI({
+      modelName: 'gpt-4o',
+      temperature: 0,
+    });
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    return new ChatAnthropic({
+      modelName: 'claude-sonnet-4-20250514',
+      temperature: 0,
+    });
+  }
+  if (process.env.GROQ_API_KEY) {
+    return new ChatGroq({
+      modelName: 'llama-3.3-70b-versatile',
+      temperature: 0,
+    });
+  }
+  throw new Error(
+    'No LLM API key found. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY.'
+  );
+}
+
+// 4. Create the agent
+const llm = createLLM();
+const tools = toolkit.getTools();
+
+const prompt = ChatPromptTemplate.fromMessages([
+  ['system', `You are a Hedera DeFi assistant. You help users interact with the Hedera network.
+You can create tokens, transfer HBAR, swap on SaucerSwap, lend/borrow on Bonzo, and more.
+Always confirm what you're about to do before executing transactions.
+After each operation, provide the transaction ID and a HashScan link.`],
+  ['human', '{input}'],
+  ['placeholder', '{agent_scratchpad}'],
+]);
+
+const agent = createToolCallingAgent({ llm, tools, prompt });
+
+const agentExecutor = new AgentExecutor({
+  agent,
+  tools,
+  verbose: true,        // logs reasoning to console
+  maxIterations: 10,    // safety limit
+  returnIntermediateSteps: true,  // needed for pipeline visualization
+});
+
+// 5. Execute with user input
+const result = await agentExecutor.invoke({
+  input: 'What is my HBAR balance?',
+});
+// result.output — final text response
+// result.intermediateSteps — array of { action, observation } pairs
+```
+
+### LLM Provider Dependencies
+
+Install the package for your chosen LLM provider:
+
+```bash
+# OpenAI
+npm install @langchain/openai
+
+# Anthropic
+npm install @langchain/anthropic
+
+# Groq (fast, free tier available)
+npm install @langchain/groq
+```
+
+### Streaming Agent Responses via SSE
+
+For real-time pipeline visualization, stream agent execution steps to the client:
+
+```typescript
+// In a Next.js API route (e.g., src/app/api/agent/route.ts)
+export async function POST(req: Request) {
+  const { input } = await req.json();
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      send('status', { message: 'Agent is thinking...' });
+
+      const result = await agentExecutor.invoke({ input });
+
+      // Stream each intermediate step
+      for (const step of result.intermediateSteps) {
+        send('tool_call', {
+          tool: step.action.tool,
+          input: step.action.toolInput,
+          output: step.observation,
+        });
+      }
+
+      send('result', { output: result.output });
+      send('done', {});
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
+}
 ```
