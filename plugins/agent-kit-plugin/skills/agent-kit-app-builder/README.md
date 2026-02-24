@@ -141,13 +141,14 @@ Both demos use only testnet-compatible plugins by default. SaucerSwap and Bonzo 
 **Build fails with missing env vars**
 Next.js evaluates server modules during `next build`. If env vars contain placeholders, the SDK throws a parse error. Use the lazy-init getter pattern from [`references/network-config.md`](references/network-config.md) to defer client initialization to runtime. Do NOT use `new Proxy({} as Client, ...)` — it breaks `instanceof Client` checks in third-party plugins.
 
-**Turbopack lockfile warning**
-If the project is nested under a parent directory with its own lockfile, add to `next.config.ts`:
+**Turbopack lockfile warning / "Can't resolve 'tailwindcss'"**
+If the project is nested under a parent directory with its own lockfile, Turbopack picks the wrong root and CSS imports like `@import "tailwindcss"` fail to resolve. Fix: add to `next.config.ts`:
 ```ts
 import path from "path";
 // inside config:
 turbopack: { root: path.resolve(__dirname) }
 ```
+If you added this config while the dev server was running, you must also clear the cache: `rm -rf .next && npm run dev`.
 
 **`toast` import errors**
 The shadcn `toast` component is deprecated. Use `sonner` instead — simpler API: `toast("message")`. Install with `npx shadcn@latest add sonner --yes`.
