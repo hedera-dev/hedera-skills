@@ -467,8 +467,20 @@ export async function POST(req: Request) {
                 send('tool_start', { tool: tc.name, input: tc.args });
               }
             }
-            if (typeof msg.content === 'string' && msg.content) {
-              finalResponse = msg.content;
+            // IMPORTANT: msg.content can be a string OR an array of
+            // { type: 'text', text: '...' } blocks (varies by LLM provider).
+            let text = '';
+            if (typeof msg.content === 'string') {
+              text = msg.content.trim();
+            } else if (Array.isArray(msg.content)) {
+              text = msg.content
+                .filter((b: any) => b.type === 'text' && b.text)
+                .map((b: any) => b.text)
+                .join('')
+                .trim();
+            }
+            if (text) {
+              finalResponse = text;
             }
           }
         }
