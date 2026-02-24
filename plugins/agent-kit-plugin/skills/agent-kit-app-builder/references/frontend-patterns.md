@@ -7,7 +7,7 @@ Implementation patterns for building polished Hedera-powered frontends with Reac
 - **Framework:** React 18+ or Next.js 14+ (App Router preferred)
 - **Language:** TypeScript always
 - **Styling:** Tailwind CSS + shadcn/ui for production-quality UI
-- **Hedera (server-side):** `hedera-agent-kit` for multi-step operations, `@hiero-ledger/sdk` for direct SDK access
+- **Hedera (server-side):** `hedera-agent-kit` for multi-step operations, `@hashgraph/sdk` for direct SDK access
 - **Hedera (read-heavy):** Mirror Node REST API for dashboard data
 - **State/Data:** React Server Components + API routes (no client-side private keys)
 
@@ -21,7 +21,7 @@ echo "no" | npx create-next-app@latest my-hedera-app --typescript --tailwind --a
 
 # 2. Install Hedera dependencies
 cd my-hedera-app
-npm install hedera-agent-kit @hiero-ledger/sdk dotenv
+npm install hedera-agent-kit @hashgraph/sdk dotenv
 
 # 3. Install UI components (use --yes for non-interactive, sonner replaces deprecated toast)
 npx shadcn@latest init -d --force
@@ -74,7 +74,7 @@ Best for straightforward single operations like balance queries and simple trans
 
 ```typescript
 // src/lib/hedera.ts — Shared client singleton (lazy-init for Next.js build compatibility)
-import { Client, PrivateKey, AccountId } from '@hiero-ledger/sdk';
+import { Client, PrivateKey, AccountId } from '@hashgraph/sdk';
 
 /** Auto-detect DER vs hex (ECDSA) private key format */
 function parsePrivateKey(key: string): PrivateKey {
@@ -114,7 +114,7 @@ export { client, network, operatorId };
 
 ```typescript
 // src/app/api/balance/route.ts — Balance query API route
-import { AccountBalanceQuery } from '@hiero-ledger/sdk';
+import { AccountBalanceQuery } from '@hashgraph/sdk';
 import { client } from '@/lib/hedera';
 
 export async function GET(req: Request) {
@@ -151,7 +151,7 @@ import {
   coreConsensusQueryPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { Client, PrivateKey } from '@hiero-ledger/sdk';
+import { Client, PrivateKey } from '@hashgraph/sdk';
 
 const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '').startsWith('302')
   ? PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
@@ -305,8 +305,11 @@ export async function executePipeline(
     try {
       // Resolve param references like "{{step1.tokenId}}" from previous results
       const resolvedParams = resolveParams(step.params, results);
-      const result = await tool.invoke(resolvedParams);
-      results[step.stepId] = typeof result === 'string' ? JSON.parse(result) : result;
+      const rawResult = await tool.invoke(resolvedParams);
+      const parsed = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+      // Tool results use { raw: {...}, humanMessage: "..." } format.
+      // Store the raw sub-object for {{step.field}} references.
+      results[step.stepId] = parsed?.raw ?? parsed;
       onEvent({
         stepId: step.stepId, tool: step.tool, service: step.service,
         status: 'success', result: results[step.stepId], elapsed: Date.now() - start,
@@ -320,14 +323,24 @@ export async function executePipeline(
   return results;
 }
 
+// IMPORTANT: Tool result shapes vary. Some return flat objects (e.g., { tokenId: "0.0.123" }),
+// while create_topic_tool returns topicId as a nested Long object: { shard, realm, num: { low: 123 } }.
+// The resolveParams function handles string references like "{{create-topic.topicId}}".
+// For create_topic_tool, parse topicId from humanMessage instead:
+//   const match = parsed.humanMessage.match(/topic id (0\.0\.\d+)/i);
+//   results['create-topic'] = { ...parsed.raw, topicId: match?.[1] };
 function resolveParams(params: Record<string, unknown>, results: Record<string, unknown>): Record<string, unknown> {
   const resolved: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+      // Resolve references like "{{create-token.tokenId}}" from previous step results
       const path = value.slice(2, -2).split('.');
       let ref: unknown = results;
       for (const seg of path) ref = (ref as Record<string, unknown>)?.[seg];
       resolved[key] = ref;
+    } else if (typeof value === 'object' && value !== null) {
+      // Recurse into nested objects (handles Memejob/Bonzo { required: { ... } } pattern)
+      resolved[key] = resolveParams(value as Record<string, unknown>, results);
     } else {
       resolved[key] = value;
     }
@@ -434,15 +447,15 @@ export function usePipeline() {
 
 ### Pattern 5: LangChain Agent Integration (Category B Only)
 
-For agentic apps where the LLM decides which tools to call at runtime. See `references/agent-kit-sdk-reference.md` for the full agent initialization code.
+For agentic apps where the LLM decides which tools to call at runtime. Uses `createReactAgent` from `@langchain/langgraph/prebuilt`. See `references/agent-kit-sdk-reference.md` for the full agent initialization code.
 
 **Architecture:**
 
 ```
 User (text or voice) → POST /api/agent { input }
-  → Server creates LangChain AgentExecutor with all hedera-agent-kit tools
+  → Server creates LangGraph agent (createReactAgent) with hedera-agent-kit tools
   → Agent reasons about which tools to call
-  → Each tool call emitted as SSE event
+  → agent.stream() emits updates as tool_start/tool_result events via SSE
   → Agent may chain multiple tool calls autonomously
   → Final response streamed back
 ```
@@ -450,8 +463,8 @@ User (text or voice) → POST /api/agent { input }
 **Key differences from Pattern 4:**
 - Pipeline steps are **dynamic** — determined by the LLM at runtime, not predefined
 - Agent provides **reasoning** text explaining why it chose each tool
-- Multi-step operations are handled **autonomously** (e.g., "swap and then check balance")
-- The `intermediateSteps` array from `AgentExecutor` provides the tool call sequence
+- Multi-step operations are handled **autonomously** (e.g., "create token and then check balance")
+- `agent.stream({ streamMode: 'updates' })` provides agent and tools node updates for pipeline visualization
 
 **Client — Agent Hook:**
 
@@ -592,7 +605,7 @@ The pipeline visualizer renders a vertical list of step cards showing tool execu
 ```typescript
 interface PipelineStep {
   stepId: string;
-  tool: string;            // e.g., "memejob_create", "saucerswap_add_liquidity"
+  tool: string;            // e.g., "create_memejob_token_tool", "saucerswap_add_liquidity"
   service: 'HTS' | 'HCS' | 'DeFi' | 'Account' | 'EVM' | 'Query';
   status: 'pending' | 'executing' | 'success' | 'error';
   params?: Record<string, unknown>;    // Collapsible input parameters
@@ -608,7 +621,7 @@ interface PipelineVisualizerProps {
 ```
 
 **Step card rendering:**
-- Tool name in monospace font (e.g., `memejob_create`)
+- Tool name in monospace font (e.g., `create_memejob_token_tool`)
 - Service badge (colored: HTS=green, HCS=blue, DeFi=purple, Account=gray)
 - Status indicator: spinner (executing), checkmark (success), X (error)
 - Collapsible params/result sections

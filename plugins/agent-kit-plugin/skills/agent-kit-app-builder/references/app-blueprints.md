@@ -18,11 +18,11 @@ Both demos feature a **pipeline visualizer** showing each agent kit tool call ex
 
 ## Blueprint 1: Meme Coin Launchpad (Category A — Regular App)
 
-**One-line pitch:** One-click meme token launch with bonding curve, community governance, and DEX liquidity — chaining 3 plugins in a visible pipeline.
+**One-line pitch:** One-click meme token launch with bonding curve and community governance — chaining Memejob, HCS, and account query plugins in a visible pipeline.
 
-**Hedera Services:** HTS (tokens via Memejob), HCS (community topic), DeFi (SaucerSwap liquidity)
+**Hedera Services:** HTS (tokens via Memejob), HCS (community topic), Account Query (balance verification)
 
-**Why it needs the Agent Kit:** Memejob plugin is the only way to create bonding curve tokens. SaucerSwap plugin is the only way to add DEX liquidity programmatically. Combining these with HCS topic creation in one pipeline is multi-plugin orchestration that raw SDK can't do.
+**Why it needs the Agent Kit:** Memejob plugin is the only way to create bonding curve tokens programmatically. Combining Memejob token creation + buying with HCS topic creation and cross-plugin verification in one pipeline is multi-plugin orchestration that raw SDK can't do.
 
 **Required env vars:**
 ```env
@@ -39,10 +39,10 @@ No LLM API key needed.
 import {
   coreConsensusPlugin,
   coreTokenQueryPlugin,
+  coreAccountQueryPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
 import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
-import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
 ```
 
 ### Pipeline Steps
@@ -51,12 +51,12 @@ User fills a config form and clicks "Launch". Six steps execute visually:
 
 | Step | Tool | Plugin | Description | Output |
 |------|------|--------|-------------|--------|
-| 1 | `memejob_create` | Memejob | Create meme token with bonding curve | `tokenId`, bonding curve params |
-| 2 | `memejob_buy` | Memejob | Buy creator's initial position | Tokens acquired, HBAR spent |
+| 1 | `create_memejob_token_tool` | Memejob | Create meme token with bonding curve | `tokenId`, bonding curve params |
+| 2 | `buy_memejob_token_tool` | Memejob | Buy creator's initial position | Tokens acquired, HBAR spent |
 | 3 | `get_token_info_query_tool` | Core Token Query | Confirm token state (supply, metadata) | Token info |
 | 4 | `create_topic_tool` | Core Consensus | Create community HCS topic | `topicId` |
 | 5 | `submit_topic_message_tool` | Core Consensus | Post launch announcement with token/topic details | Message sequence number |
-| 6 | `saucerswap_add_liquidity` | SaucerSwap | Seed initial DEX liquidity (token + HBAR pair) | LP token info, pool details |
+| 6 | `get_account_token_balances_query_tool` | Core Account Query | Verify meme tokens arrived in creator's wallet | Token balances list |
 
 ### Pipeline Step Definitions (for `executePipeline()`)
 
@@ -65,22 +65,25 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
   return [
     {
       stepId: 'create-token',
-      tool: 'memejob_create',
+      tool: 'create_memejob_token_tool',
       service: 'HTS',
       params: {
-        name: config.tokenName,
-        symbol: config.tokenSymbol,
-        description: config.description,
-        imageUrl: config.imageUrl,
+        required: {
+          name: config.tokenName,
+          symbol: config.tokenSymbol,
+          memo: config.metadataIpfsPath || '',
+        },
       },
     },
     {
       stepId: 'buy-initial',
-      tool: 'memejob_buy',
+      tool: 'buy_memejob_token_tool',
       service: 'DeFi',
       params: {
-        tokenId: '{{create-token.tokenId}}',
-        hbarAmount: config.initialBuyHbar,
+        required: {
+          tokenId: '{{create-token.tokenId}}',
+          amount: config.initialBuyHbar,
+        },
       },
     },
     {
@@ -116,14 +119,11 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
       },
     },
     {
-      stepId: 'add-liquidity',
-      tool: 'saucerswap_add_liquidity',
-      service: 'DeFi',
+      stepId: 'verify-balance',
+      tool: 'get_account_token_balances_query_tool',
+      service: 'Query',
       params: {
-        tokenAId: '{{create-token.tokenId}}',
-        tokenBId: 'HBAR',
-        amountA: config.liquidityTokenAmount,
-        amountB: config.liquidityHbarAmount,
+        accountId: process.env.HEDERA_OPERATOR_ID!,
       },
     },
   ];
@@ -145,18 +145,18 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
 ├─────────────────────────┬────────────────────────────────────────┤
 │  Config Form (left)     │  Pipeline Visualizer (right)           │
 │                         │                                        │
-│  Token Name: [_______]  │  Step 1: memejob_create     ✓ 2.3s    │
-│  Symbol:     [_______]  │  Step 2: memejob_buy         ✓ 1.8s   │
+│  Token Name: [_______]  │  Step 1: create_memejob...   ✓ 2.3s    │
+│  Symbol:     [_______]  │  Step 2: buy_memejob_...     ✓ 1.8s   │
 │  Description:[_______]  │  Step 3: get_token_info...   ⏳        │
 │  Image URL:  [_______]  │  Step 4: create_topic_tool   ○         │
 │  Initial Buy:[___] HBAR │  Step 5: submit_topic_...    ○         │
-│  Liquidity:  [___] HBAR │  Step 6: saucerswap_add...   ○         │
+│                         │  Step 6: get_account_to...   ○         │
 │                         │                                        │
 │  [🚀 Launch Token]      │  Each step: collapsible params/result  │
 ├─────────────────────────┴────────────────────────────────────────┤
 │  Launch Card (appears after pipeline completes)                   │
-│  Token: $MEME (0.0.12345) | Topic: 0.0.67890 | Pool: active     │
-│  [HashScan] [Community Topic] [Trade on SaucerSwap]              │
+│  Token: $MEME (0.0.12345) | Topic: 0.0.67890 | Balance: ✓       │
+│  [HashScan Token] [HashScan Topic] [Community Topic]             │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -182,7 +182,7 @@ src/
 ├── hooks/
 │   └── use-pipeline.ts              # SSE consumer hook
 ├── lib/
-│   ├── toolkit.ts                    # Agent Kit toolkit with 4 plugins
+│   ├── toolkit.ts                    # Agent Kit toolkit with 3 plugins + account query
 │   ├── pipeline.ts                   # Pipeline execution engine
 │   └── hedera.ts                     # Client singleton
 └── types/
@@ -195,7 +195,7 @@ src/
 ```json
 {
   "stepId": "create-token",
-  "tool": "memejob_create",
+  "tool": "create_memejob_token_tool",
   "service": "HTS",
   "status": "success",
   "result": {
@@ -235,9 +235,9 @@ src/
 
 **One-line pitch:** Voice and text-enabled DeFi assistant — tell it what to do in natural language and watch it reason, select tools, and execute across all Hedera services.
 
-**Hedera Services:** ALL — HTS, HCS, HSCS (via EVM tools), Mirror Node, DeFi (SaucerSwap, Bonzo, Memejob)
+**Hedera Services (testnet):** HTS, HCS, Account, Memejob. For mainnet, add SaucerSwap and Bonzo.
 
-**Why it needs the Agent Kit:** This IS the agent kit. The app initializes a LangChain agent with hedera-agent-kit tools, feeds it natural language from the user, and the LLM reasons about which tools to call. Multi-step operations are handled by the agent autonomously.
+**Why it needs the Agent Kit:** This IS the agent kit. The app creates a LangGraph agent (`createReactAgent`) with hedera-agent-kit tools, feeds it natural language from the user, and the LLM reasons about which tools to call. Multi-step operations are handled by the agent autonomously.
 
 **Required env vars:**
 ```env
@@ -252,20 +252,21 @@ ANTHROPIC_API_KEY=sk-ant-...   # or
 GROQ_API_KEY=gsk_...
 ```
 
-### Plugins Required (ALL)
+### Plugins Required
+
+Load plugins based on network — Groq free tier has a 12k TPM limit, so load fewer plugins:
 
 ```typescript
 import {
   coreAccountPlugin, coreAccountQueryPlugin,
   coreTokenPlugin, coreTokenQueryPlugin,
   coreConsensusPlugin, coreConsensusQueryPlugin,
-  coreEVMPlugin, coreEVMQueryPlugin,
-  coreMiscQueriesPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
-import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
 import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
+// Mainnet-only plugins (uncomment for mainnet apps):
+// import { saucerswapPlugin } from 'hak-saucerswap-plugin';
+// import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
 ```
 
 ### Architecture
@@ -275,15 +276,15 @@ User (text or voice input)
   ↓
 POST /api/agent { input: "Swap 100 HBAR for SAUCE" }
   ↓
-Server: LangChain AgentExecutor with ALL hedera-agent-kit tools
+Server: LangGraph createReactAgent with hedera-agent-kit tools
   ↓
-Agent reasons: "I need to get a quote first, then execute the swap"
+Agent reasons: "I need to create the token first, then check the balance"
   ↓
-SSE events stream to client:
+SSE events stream to client via agent.stream():
   → { status: "Agent is thinking..." }
-  → { tool: "saucerswap_get_quote", input: {...}, output: {...} }
-  → { tool: "saucerswap_swap", input: {...}, output: {...} }
-  → { output: "Swapped 100 HBAR for 2,450 SAUCE. Transaction: 0.0.98765@..." }
+  → { tool_start: "create_memejob_token_tool", input: {...} }
+  → { tool_call: "create_memejob_token_tool", output: {...} }
+  → { output: "Created meme token PEPE (0.0.12345). Transaction: 0.0.98765@..." }
   ↓
 Pipeline visualizer updates in real-time
 Account dashboard auto-refreshes
@@ -291,16 +292,16 @@ Account dashboard auto-refreshes
 
 ### Example Interactions
 
-| User Says | Agent Does |
-|-----------|-----------|
-| "What's my HBAR balance?" | Calls `get_hbar_balance_query_tool` |
-| "Create a token called GameCoin with 50000 supply" | Calls `create_fungible_token_tool` |
-| "Swap 100 HBAR for SAUCE on SaucerSwap" | Calls `saucerswap_get_quote` → `saucerswap_swap` |
-| "Borrow 50 USDC on Bonzo using my HBAR as collateral" | Calls `bonzo_supply` (HBAR) → `bonzo_borrow` (USDC) |
-| "Airdrop 100 tokens to these 5 accounts" | Calls `airdrop_fungible_token_tool` |
-| "Launch a meme coin called PEPE" | Calls `memejob_create` |
-| "Create a topic for our community" | Calls `create_topic_tool` |
-| "What tokens do I have?" | Calls `get_account_token_balances_query_tool` |
+| User Says | Agent Does | Testnet? |
+|-----------|-----------|----------|
+| "What's my HBAR balance?" | Calls `get_hbar_balance_query_tool` | ✅ |
+| "Create a token called GameCoin with 50000 supply" | Calls `create_fungible_token_tool` | ✅ |
+| "Launch a meme coin called PEPE" | Calls `create_memejob_token_tool` | ✅ |
+| "Create a topic for our community" | Calls `create_topic_tool` | ✅ |
+| "Post a message to topic 0.0.12345" | Calls `submit_topic_message_tool` | ✅ |
+| "What tokens do I have?" | Calls `get_account_token_balances_query_tool` | ✅ |
+| "Airdrop 100 tokens to these 5 accounts" | Calls `airdrop_fungible_token_tool` | ✅ |
+| "Swap 100 HBAR for SAUCE on SaucerSwap" | Calls `saucerswap_get_swap_quote` → `saucerswap_swap_tokens` | ⚠️ Mainnet |
 
 ### API Routes
 
@@ -323,11 +324,11 @@ Account dashboard auto-refreshes
 │        SAUCE"                │  Balance: 925.5 ℏ                 │
 │                              │                                   │
 │  Agent thinking...           │  Tokens:                          │
-│  ┌─ saucerswap_get_quote ─┐ │  SAUCE    2,450   0.0.67890       │
+│  ┌─ saucerswap_get_swap.. ┐ │  SAUCE    2,450   0.0.67890       │
 │  │ status: ✓  1.2s        │ │  USDC     100     0.0.45678       │
 │  │ quote: 2,450 SAUCE     │ │                                   │
 │  └────────────────────────┘ │  Recent Transactions:              │
-│  ┌─ saucerswap_swap ──────┐ │  SWAP     ✓  just now             │
+│  ┌─ saucerswap_swap_to... ┐ │  SWAP     ✓  just now             │
 │  │ status: ✓  3.1s        │ │  TRANSFER ✓  2 min ago            │
 │  │ txId: 0.0.98765@...    │ │                                   │
 │  └────────────────────────┘ │                                   │
@@ -378,9 +379,11 @@ src/
 See `references/agent-kit-sdk-reference.md` → "LangChain Agent Integration" for the full initialization code. Key points:
 
 1. Auto-detect LLM provider from env vars (`OPENAI_API_KEY` → OpenAI, etc.)
-2. Load ALL plugins (core + SaucerSwap + Bonzo + Memejob)
-3. Use `createToolCallingAgent` + `AgentExecutor` with `returnIntermediateSteps: true`
-4. System prompt tells the agent it's a Hedera DeFi assistant
+2. Load plugins based on network: core + Memejob for testnet, add SaucerSwap + Bonzo for mainnet
+3. Use `createReactAgent` from `@langchain/langgraph/prebuilt` with system prompt
+4. Stream responses via `agent.stream()` with `streamMode: 'updates'` for SSE
+
+> **Groq free tier:** Loading all plugins (~38 tools) exceeds Groq's 12k TPM limit. For Groq free tier, load only the plugins your app needs (≤10 tools). OpenAI/Anthropic handle the full set.
 
 ### SSE Event Format
 
@@ -390,9 +393,9 @@ See `references/agent-kit-sdk-reference.md` → "LangChain Agent Integration" fo
 
 // Tool call
 { "event": "tool_call", "data": {
-    "tool": "saucerswap_swap",
-    "input": { "tokenInId": "HBAR", "tokenOutId": "0.0.67890", "amountIn": 100 },
-    "output": { "transactionId": "0.0.98765@1234567890.123", "amountOut": 2450 }
+    "tool": "saucerswap_swap_tokens",
+    "input": { "fromToken": "HBAR", "toToken": "0.0.67890", "amount": "100" },
+    "output": { "transactionId": "0.0.98765@1234567890.123", "amountOut": "2450" }
   }
 }
 

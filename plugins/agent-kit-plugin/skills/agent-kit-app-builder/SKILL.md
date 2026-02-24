@@ -6,7 +6,7 @@ version: 2.0.0
 
 # Build Hedera Apps with the Agent Kit
 
-This skill enables you to build polished frontend applications with native Hedera blockchain support using the `hedera-agent-kit` npm package and `@hiero-ledger/sdk`. It also enables live interaction with the Hedera network during development via the Hedera Agent Kit MCP server — query accounts, create test tokens, seed data, and validate that your generated UI works with real on-chain data.
+This skill enables you to build polished frontend applications with native Hedera blockchain support using the `hedera-agent-kit` npm package and `@hashgraph/sdk`. It also enables live interaction with the Hedera network during development via the Hedera Agent Kit MCP server — query accounts, create test tokens, seed data, and validate that your generated UI works with real on-chain data.
 
 ## Two Ways to Build
 
@@ -45,18 +45,18 @@ Route to the right reference based on what the user needs:
 
 2. Read `references/app-blueprints.md` — pick the matching blueprint:
    - **Meme Coin Launchpad** (Category A) — multi-plugin pipeline, no LLM
-   - **Hedera DeFi Agent** (Category B) — LangChain agent with all tools
+   - **Hedera DeFi Agent** (Category B) — LangGraph agent with hedera-agent-kit tools
 
 3. Read `references/frontend-patterns.md` — implementation patterns:
    - Patterns 1-3: Direct SDK, Agent Kit toolkit, Mirror Node (both categories)
    - **Pattern 4: Pipeline SSE** — Shared pipeline engine (both categories)
-   - **Pattern 5: LangChain Agent** — Agent initialization and streaming (Category B only)
+   - **Pattern 5: LangGraph Agent** — `createReactAgent` initialization and streaming (Category B only)
    - **Voice Input Pattern** — Web Speech API (Category B only)
 
 4. Read `references/agent-kit-sdk-reference.md` — API details:
    - Core plugin tools (both categories)
-   - Third-party plugin tools: SaucerSwap, Bonzo, Memejob (both categories)
-   - LangChain agent integration (Category B only)
+   - Third-party plugin tools: Memejob (testnet), SaucerSwap/Bonzo (mainnet-only — see testnet compatibility table)
+   - LangGraph agent integration with `createReactAgent` (Category B only)
 
 ### "I want to QUERY or TRANSACT on Hedera during development"
 
@@ -83,18 +83,31 @@ The `demos/` directory contains complete prompts for two demo apps. Copy a `PROM
 
 | Demo | Category | What it builds | Hedera services | LLM key? |
 |------|----------|---------------|-----------------|----------|
-| `demos/meme-coin-launchpad/` | A | One-click meme token launch with bonding curve, community topic, DEX liquidity | HTS (Memejob), HCS, DeFi (SaucerSwap) | No |
-| `demos/defi-agent/` | B | Voice/text DeFi assistant — AI agent across all Hedera services | ALL (HTS, HCS, HSCS, Mirror Node, SaucerSwap, Bonzo, Memejob) | Yes |
+| `demos/meme-coin-launchpad/` | A | One-click meme token launch with bonding curve, community topic, wallet verification | HTS (Memejob), HCS, Account Query | No |
+| `demos/defi-agent/` | B | Voice/text DeFi assistant — AI agent with Hedera tools | HTS, HCS, Account, Memejob | Yes |
 
 ## Integration Patterns Summary
 
 Five ways to connect your frontend to Hedera (details in `references/frontend-patterns.md`):
 
-1. **Direct SDK** — `@hiero-ledger/sdk` for simple queries and transactions
+1. **Direct SDK** — `@hashgraph/sdk` for simple queries and transactions
 2. **Agent Kit** — `hedera-agent-kit` toolkit with plugins for complex multi-step operations
 3. **Mirror Node REST API** — HTTP queries for read-heavy dashboard UIs (no private key needed)
 4. **Pipeline Execution with SSE** — Server-side pipeline engine that chains toolkit tool calls sequentially, streaming progress to the client. Shared by both Category A and B demos.
-5. **LangChain Agent Integration** — LangChain agent with hedera-agent-kit tools for natural language interaction. Category B only.
+5. **LangGraph Agent Integration** — `createReactAgent` from `@langchain/langgraph/prebuilt` with hedera-agent-kit tools for natural language interaction. Category B only.
+
+## Plugin Testnet Compatibility
+
+Not all third-party plugins work on testnet. Check `references/agent-kit-sdk-reference.md` for the full compatibility table. Summary:
+
+| Plugin | Testnet |
+|--------|---------|
+| Core plugins | ✅ |
+| Memejob | ✅ |
+| SaucerSwap | ⚠️ Mainnet only |
+| Bonzo | ⚠️ Requires setup |
+
+Both demos use only testnet-compatible plugins by default.
 
 ## Key Principle
 

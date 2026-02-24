@@ -30,15 +30,30 @@ Both demos feature a **pipeline visualizer** showing each agent kit tool call ex
 
 ## Demo Comparison
 
-| Demo | Category | Complexity | What It Builds | Hedera Services | LLM Key? |
-|------|----------|-----------|----------------|-----------------|----------|
-| **Meme Coin Launchpad** | A | Medium | One-click meme token launch with bonding curve, community topic, and DEX liquidity | HTS (Memejob), HCS, DeFi (SaucerSwap) | No |
-| **Hedera DeFi Agent** | B | High | Voice/text DeFi assistant — AI agent executes across all Hedera services | ALL (HTS, HCS, HSCS, Mirror Node, SaucerSwap, Bonzo, Memejob) | Yes |
+| Demo | Category | What It Builds | Hedera Services | Testnet? | LLM Key? |
+|------|----------|----------------|-----------------|----------|----------|
+| **Meme Coin Launchpad** | A | One-click meme token launch with bonding curve, community topic, and wallet verification | HTS (Memejob), HCS, Account Query | ✅ Full | No |
+| **Hedera DeFi Agent** | B | Voice/text DeFi assistant — AI agent with Hedera tools | HTS, HCS, Account, Memejob | ✅ Full | Yes |
+
+## Plugin Testnet Compatibility
+
+Not all third-party plugins work on testnet out of the box:
+
+| Plugin | Testnet | Notes |
+|--------|---------|-------|
+| Core plugins (account, token, consensus) | ✅ | All work on testnet |
+| Memejob | ✅ | Token creation, buying, selling |
+| SaucerSwap | ⚠️ Mainnet only | Plugin defaults to mainnet API, returns 401 on testnet |
+| Bonzo | ⚠️ Requires setup | Needs `bonzo-contracts.json` config file |
+
+Both demos use only testnet-compatible plugins. SaucerSwap and Bonzo can be added for mainnet-targeting apps.
 
 ## Notes
 
 - All demos target **Hedera testnet** by default (free, no real cost)
 - Prompts are optimized for one-shot generation but may require 1-2 follow-up iterations for polish
 - Each demo uses Next.js 14+ with TypeScript, Tailwind CSS, and shadcn/ui
+- Use `@hashgraph/sdk` (NOT `@hiero-ledger/sdk`) — see troubleshooting in the main README
 - Server-side API routes handle all Hedera operations — private keys are never exposed to the client
-- Category B apps auto-detect which LLM provider is configured (Groq recommended for demos — free tier, fastest)
+- Category B apps use `createReactAgent` from `@langchain/langgraph/prebuilt` (NOT the old `langchain/agents`)
+- Groq free tier has a 12k TPM limit — load fewer plugins or use OpenAI/Anthropic for full tool set

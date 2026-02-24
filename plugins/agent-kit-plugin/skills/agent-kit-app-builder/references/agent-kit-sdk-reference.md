@@ -5,10 +5,10 @@ Condensed API reference for `hedera-agent-kit` v3.7.x / v3.8.x npm package.
 ## Installation
 
 ```bash
-npm install hedera-agent-kit @hiero-ledger/sdk @langchain/core langchain dotenv
+npm install hedera-agent-kit @hashgraph/sdk @langchain/core langchain dotenv
 ```
 
-> **Note:** The Hedera SDK was renamed from `@hashgraph/sdk` to `@hiero-ledger/sdk`. Both packages export the same API. Use `@hiero-ledger/sdk` for new projects.
+> **Note:** While the SDK was renamed to `@hiero-ledger/sdk`, hedera-agent-kit and its plugins still import from `@hashgraph/sdk` internally. To avoid `instanceof` mismatches, use `@hashgraph/sdk` when building apps with hedera-agent-kit. Both packages export the same API.
 
 ## Initialization
 
@@ -22,7 +22,7 @@ import {
   coreMiscQueriesPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { Client, PrivateKey } from '@hiero-ledger/sdk';
+import { Client, PrivateKey } from '@hashgraph/sdk';
 
 // Auto-detect key format: DER (starts with "302") vs hex (ECDSA)
 // Strip "0x" prefix if present (common with MetaMask/wallet exports)
@@ -204,7 +204,7 @@ These community plugins extend the Agent Kit with DeFi and ecosystem integration
 Install and register like any core plugin:
 
 ```typescript
-import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
+import { saucerswapPlugin } from 'hak-saucerswap-plugin';
 import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
 import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
 
@@ -213,7 +213,7 @@ const toolkit = new HederaLangchainToolkit({
   configuration: {
     plugins: [
       ...corePlugins,
-      saucerSwapPlugin,
+      saucerswapPlugin,
       bonzoPlugin,
       memejobPlugin,
     ],
@@ -222,28 +222,34 @@ const toolkit = new HederaLangchainToolkit({
 });
 ```
 
-### SaucerSwap Plugin (`saucerSwapPlugin`)
+### SaucerSwap Plugin (`saucerswapPlugin`)
 
-SaucerSwap is Hedera's leading DEX. All tools operate on testnet or mainnet based on the client's network.
+SaucerSwap is Hedera's leading DEX. **⚠️ Mainnet only** — the plugin defaults to the mainnet API (`api.saucerswap.finance`) and returns 401 on testnet. Only include in mainnet-targeting apps.
+
+> **Import name:** `saucerswapPlugin` (lowercase 's' in swap).
 
 | Tool Name | Params | Description |
 |-----------|--------|-------------|
-| `saucerswap_swap` | `tokenInId: string, tokenOutId: string, amountIn: number, slippage?: number` | Swap tokens on SaucerSwap. Use `"HBAR"` as the token ID for native HBAR. Slippage defaults to 0.5%. |
-| `saucerswap_get_quote` | `tokenInId: string, tokenOutId: string, amountIn: number` | Get a price quote without executing a swap. Returns expected output amount and price impact. |
-| `saucerswap_add_liquidity` | `tokenAId: string, tokenBId: string, amountA: number, amountB: number` | Add liquidity to a token pair pool. Creates the pool if it doesn't exist. Returns LP token info. |
-| `saucerswap_remove_liquidity` | `lpTokenId: string, amount: number` | Remove liquidity by burning LP tokens. Returns withdrawn amounts of both tokens. |
-| `saucerswap_get_pools` | none | List available liquidity pools with TVL, volume, and token pair info. |
+| `saucerswap_swap_tokens` | `fromToken: string, toToken: string, amount: string, slippageTolerance?: number` | Swap tokens on SaucerSwap. Use `"HBAR"` for native HBAR. Amount is a decimal string (e.g., `"100"`). Slippage defaults to 0.5%. |
+| `saucerswap_get_swap_quote` | `fromToken: string, toToken: string, amount: string, slippageTolerance?: number` | Get a price quote without executing. Returns expected output and price impact. |
+| `saucerswap_add_liquidity` | `tokenA: string, tokenB: string, amountA: string, amountB: string, slippageTolerance?: number` | Add liquidity to a pool. Amounts are decimal strings. |
+| `saucerswap_remove_liquidity` | `tokenA: string, tokenB: string, lpTokenAmount: string, minAmountA: string, minAmountB: string` | Remove liquidity by specifying token pair and LP amount to burn. |
+| `saucerswap_get_pools` | `tokenA?: string, tokenB?: string, version?: string, limit?: number` | Query liquidity pools. All params optional — omit for all pools. |
+| `saucerswap_get_farms` | `poolId?: string` | Get active farming/staking opportunities. Optional pool ID filter. |
 
 ### Bonzo Finance Plugin (`bonzoPlugin`)
 
-Bonzo is a DeFi lending/borrowing protocol on Hedera. Users supply collateral and borrow against it.
+Bonzo is a DeFi lending/borrowing protocol on Hedera (Aave v2 fork). Users supply collateral and borrow against it.
 
 | Tool Name | Params | Description |
 |-----------|--------|-------------|
-| `bonzo_supply` | `tokenId: string, amount: number` | Supply tokens as collateral to Bonzo. Receives interest-bearing bTokens in return. |
-| `bonzo_borrow` | `tokenId: string, amount: number` | Borrow tokens against existing collateral. Requires sufficient collateral ratio. |
-| `bonzo_repay` | `tokenId: string, amount: number` | Repay borrowed tokens (partial or full). Reduces outstanding debt. |
-| `bonzo_withdraw` | `tokenId: string, amount: number` | Withdraw previously supplied collateral. Fails if it would under-collateralize active borrows. |
+| `bonzo_market_data_tool` | none | Fetch current market data: supported tokens, supply/borrow APYs, liquidity. Read-only. |
+| `bonzo_deposit_tool` | `required: { tokenSymbol: string, amount: number \| string }` | Supply tokens as collateral (called "deposit"). Uses token symbol (e.g., `"HBAR"`, `"USDC"`), not token ID. |
+| `bonzo_borrow_tool` | `required: { tokenSymbol: string, amount: number \| string }` | Borrow tokens against existing collateral. Requires sufficient collateral ratio. |
+| `bonzo_repay_tool` | `required: { tokenSymbol: string, amount: number \| string }` | Repay borrowed tokens (partial or full). |
+| `bonzo_withdraw_tool` | `required: { tokenSymbol: string, amount: number \| string }` | Withdraw previously supplied collateral. Fails if it would under-collateralize borrows. |
+
+> **Bonzo param pattern:** Bonzo tools use **nested objects** with `required` and optional `optional` keys, and identify tokens by **symbol** (e.g., `"HBAR"`) not token ID.
 
 ### Memejob Plugin (`memejobPlugin`)
 
@@ -251,17 +257,30 @@ Memejob creates meme tokens with built-in bonding curves — a pricing mechanism
 
 | Tool Name | Params | Description |
 |-----------|--------|-------------|
-| `memejob_create` | `name: string, symbol: string, description?: string, imageUrl?: string` | Create a new meme token with an automatic bonding curve. Returns tokenId and bonding curve parameters. |
-| `memejob_buy` | `tokenId: string, hbarAmount: number` | Buy meme tokens by spending HBAR. Price determined by bonding curve (more bought = higher price). |
-| `memejob_sell` | `tokenId: string, tokenAmount: number` | Sell meme tokens back for HBAR. Price determined by bonding curve. |
+| `create_memejob_token_tool` | `required: { name: string, symbol: string, memo: string }, optional?: { amount?: number, distributeRewards?: boolean }` | Create a meme token. `memo` is required — a description or IPFS metadata path for the token (cannot be empty). Optional `amount` buys an initial position. |
+| `buy_memejob_token_tool` | `required: { tokenId: string, amount: number }, optional?: { autoAssociate?: boolean }` | Buy meme tokens by spending HBAR. Amount in HBAR. Price determined by bonding curve. |
+| `sell_memejob_token_tool` | `required: { tokenId: string, amount: number }, optional?: { instant?: boolean }` | Sell meme tokens back for HBAR. If `instant: true`, auto-approves token allowance before selling. |
 
-> **Testnet support:** All three plugins support Hedera testnet. SaucerSwap has a testnet DEX deployment. Bonzo has a testnet lending market. Memejob supports testnet token creation.
+> **Memejob param pattern:** Memejob tools use **nested objects** with `required` and optional `optional` keys. Always wrap params in `{ required: { ... } }`.
+
+> **Testnet Compatibility:**
+>
+> | Plugin | Testnet Support | Notes |
+> |--------|----------------|-------|
+> | **Core plugins** (account, token, consensus, EVM, query) | ✅ Full support | All core plugins work on testnet out of the box |
+> | **Memejob** | ✅ Full support | Token creation, buying, selling all work on testnet |
+> | **SaucerSwap** | ⚠️ Mainnet only | The plugin defaults to the mainnet API (`api.saucerswap.finance`). Testnet returns 401. Only include in apps targeting mainnet. |
+> | **Bonzo** | ⚠️ Requires setup | Needs a `bonzo-contracts.json` config file with deployed contract addresses. Not plug-and-play on testnet. |
+>
+> **For testnet demos:** Use core plugins + Memejob. Add SaucerSwap/Bonzo only when targeting mainnet or when their testnet setup is configured.
 
 ---
 
 ## LangChain Agent Integration
 
-For **agentic apps** (Category B) where an LLM reasons about which tools to call at runtime, use LangChain's agent framework with hedera-agent-kit tools.
+For **agentic apps** (Category B) where an LLM reasons about which tools to call at runtime, use LangGraph's `createReactAgent` with hedera-agent-kit tools.
+
+> **Important:** The old `langchain/agents` path (`createToolCallingAgent` + `AgentExecutor`) is no longer exported in langchain v1.x. Use `createReactAgent` from `@langchain/langgraph/prebuilt` instead — it's a simpler, more powerful API that returns a compiled graph you can invoke or stream directly.
 
 ### Agent Initialization
 
@@ -271,19 +290,17 @@ import {
   coreAccountPlugin, coreAccountQueryPlugin,
   coreTokenPlugin, coreTokenQueryPlugin,
   coreConsensusPlugin, coreConsensusQueryPlugin,
-  coreEVMPlugin, coreEVMQueryPlugin,
-  coreMiscQueriesPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { saucerSwapPlugin } from 'hak-saucerswap-plugin';
-import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
 import { memejobPlugin } from '@buidlerlabs/hak-memejob-plugin';
+// Optional mainnet-only plugins (see Testnet Compatibility above):
+// import { saucerswapPlugin } from 'hak-saucerswap-plugin';
+// import { bonzoPlugin } from '@bonzofinancelabs/hak-bonzo-plugin';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGroq } from '@langchain/groq';
-import { createToolCallingAgent, AgentExecutor } from 'langchain/agents';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { Client, PrivateKey } from '@hiero-ledger/sdk';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { Client, PrivateKey } from '@hashgraph/sdk';
 
 // 1. Initialize Hedera client
 const rawKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '');
@@ -296,7 +313,10 @@ const client = Client.forTestnet().setOperator(
   operatorKey
 );
 
-// 2. Create toolkit with ALL plugins
+// 2. Create toolkit with plugins
+// IMPORTANT: Loading all plugins (38+ tools) sends ~34k tokens of schemas to the LLM.
+// Groq free tier has a 12k TPM limit — load only the plugins you need.
+// OpenAI and Anthropic handle the full set without issues.
 const toolkit = new HederaLangchainToolkit({
   client,
   configuration: {
@@ -306,11 +326,10 @@ const toolkit = new HederaLangchainToolkit({
       coreAccountPlugin, coreAccountQueryPlugin,
       coreTokenPlugin, coreTokenQueryPlugin,
       coreConsensusPlugin, coreConsensusQueryPlugin,
-      coreEVMPlugin, coreEVMQueryPlugin,
-      coreMiscQueriesPlugin,
-      saucerSwapPlugin,
-      bonzoPlugin,
       memejobPlugin,
+      // Add these for mainnet apps:
+      // saucerswapPlugin,
+      // bonzoPlugin,
     ],
   },
 });
@@ -319,19 +338,19 @@ const toolkit = new HederaLangchainToolkit({
 function createLLM() {
   if (process.env.OPENAI_API_KEY) {
     return new ChatOpenAI({
-      modelName: 'gpt-4o',
+      model: 'gpt-4o',
       temperature: 0,
     });
   }
   if (process.env.ANTHROPIC_API_KEY) {
     return new ChatAnthropic({
-      modelName: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-20250514',
       temperature: 0,
     });
   }
   if (process.env.GROQ_API_KEY) {
     return new ChatGroq({
-      modelName: 'llama-3.3-70b-versatile',
+      model: 'llama-3.3-70b-versatile',
       temperature: 0,
     });
   }
@@ -340,55 +359,58 @@ function createLLM() {
   );
 }
 
-// 4. Create the agent
+// 4. Create the agent using LangGraph's createReactAgent
 const llm = createLLM();
 const tools = toolkit.getTools();
 
-const prompt = ChatPromptTemplate.fromMessages([
-  ['system', `You are a Hedera DeFi assistant. You help users interact with the Hedera network.
-You can create tokens, transfer HBAR, swap on SaucerSwap, lend/borrow on Bonzo, and more.
-Always confirm what you're about to do before executing transactions.
-After each operation, provide the transaction ID and a HashScan link.`],
-  ['human', '{input}'],
-  ['placeholder', '{agent_scratchpad}'],
-]);
-
-const agent = createToolCallingAgent({ llm, tools, prompt });
-
-const agentExecutor = new AgentExecutor({
-  agent,
+const agent = createReactAgent({
+  llm,
   tools,
-  verbose: true,        // logs reasoning to console
-  maxIterations: 10,    // safety limit
-  returnIntermediateSteps: true,  // needed for pipeline visualization
+  prompt: `You are a Hedera DeFi assistant. You help users interact with the Hedera network.
+You can create tokens, transfer HBAR, create meme coins, and more.
+Always confirm what you're about to do before executing transactions.
+After each operation, provide the transaction ID and a HashScan link.`,
 });
 
 // 5. Execute with user input
-const result = await agentExecutor.invoke({
-  input: 'What is my HBAR balance?',
+const result = await agent.invoke({
+  messages: [{ role: 'user', content: 'What is my HBAR balance?' }],
 });
-// result.output — final text response
-// result.intermediateSteps — array of { action, observation } pairs
+// result.messages — array of BaseMessage objects (user, AI, tool calls, tool results)
+// The last AI message contains the final response
+
+// 6. Or stream for real-time updates
+const stream = await agent.stream(
+  { messages: [{ role: 'user', content: 'What is my HBAR balance?' }] },
+  { streamMode: 'values' },
+);
+for await (const { messages } of stream) {
+  // Each iteration yields the full message list so far
+  // Use this for SSE streaming in API routes
+}
 ```
+
+> **Groq free tier limitation:** Loading all plugins generates ~38 tools (~34k tokens of schemas). Groq's free tier has a 12k TPM limit. To use Groq free tier, load only the plugins your app needs (≤10 tools). OpenAI and Anthropic paid tiers handle the full tool set.
 
 ### LLM Provider Dependencies
 
-Install the package for your chosen LLM provider:
+Install the LangGraph agent framework and your chosen LLM provider:
 
 ```bash
-# OpenAI
-npm install @langchain/openai
+# Required for all Category B apps:
+npm install @langchain/langgraph @langchain/core
 
-# Anthropic
-npm install @langchain/anthropic
-
-# Groq (fast, free tier available)
-npm install @langchain/groq
+# Then install ONE LLM provider:
+npm install @langchain/openai      # OpenAI (most reliable tool calling)
+npm install @langchain/anthropic   # Anthropic (strong reasoning)
+npm install @langchain/groq        # Groq (fast, free tier — see token limits below)
 ```
+
+> **Note:** `langchain` (the main package) is NOT needed. The agent is created entirely with `@langchain/langgraph` + `@langchain/core` + your LLM provider package.
 
 ### Streaming Agent Responses via SSE
 
-For real-time pipeline visualization, stream agent execution steps to the client:
+For real-time pipeline visualization, stream agent execution via `agent.stream()`:
 
 ```typescript
 // In a Next.js API route (e.g., src/app/api/agent/route.ts)
@@ -396,7 +418,7 @@ export async function POST(req: Request) {
   const { input } = await req.json();
 
   const encoder = new TextEncoder();
-  const stream = new ReadableStream({
+  const readableStream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: unknown) => {
         controller.enqueue(
@@ -406,24 +428,45 @@ export async function POST(req: Request) {
 
       send('status', { message: 'Agent is thinking...' });
 
-      const result = await agentExecutor.invoke({ input });
+      // Stream using LangGraph's agent.stream()
+      const agentStream = await agent.stream(
+        { messages: [{ role: 'user', content: input }] },
+        { streamMode: 'updates' },
+      );
 
-      // Stream each intermediate step
-      for (const step of result.intermediateSteps) {
-        send('tool_call', {
-          tool: step.action.tool,
-          input: step.action.toolInput,
-          output: step.observation,
-        });
+      let finalResponse = '';
+      for await (const update of agentStream) {
+        // Tool node updates contain tool call results
+        if (update.tools) {
+          for (const msg of update.tools.messages) {
+            send('tool_call', {
+              tool: msg.name,
+              output: msg.content,
+            });
+          }
+        }
+        // Agent node updates contain AI responses
+        if (update.agent) {
+          for (const msg of update.agent.messages) {
+            if (msg.tool_calls?.length) {
+              for (const tc of msg.tool_calls) {
+                send('tool_start', { tool: tc.name, input: tc.args });
+              }
+            }
+            if (typeof msg.content === 'string' && msg.content) {
+              finalResponse = msg.content;
+            }
+          }
+        }
       }
 
-      send('result', { output: result.output });
+      send('result', { output: finalResponse });
       send('done', {});
       controller.close();
     },
   });
 
-  return new Response(stream, {
+  return new Response(readableStream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
