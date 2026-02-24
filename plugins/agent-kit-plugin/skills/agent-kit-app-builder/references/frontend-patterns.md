@@ -467,63 +467,257 @@ User (text or voice) → POST /api/agent { input }
 
 **Client — Agent Hook:**
 
+The hook handles 5 SSE event types: `thinking`, `tool_start`, `tool_end`, `message`, `done`, and `error`.
+
+Key patterns:
+- **`thinking` events**: When the agent reasons before tool calls, display in a distinct bubble
+- **`tool_end` with `humanMessage`**: Extract `humanMessage` from tool results as interim content so users see the answer immediately, instead of waiting for the agent's second LLM call (which can take 30-60s with Groq). **Mark as interim** with a flag so the real `message` event **replaces** it (not appends).
+- **`done` fallback**: If the stream ends with no `message` but tool calls exist, synthesize a brief fallback to clear the "Thinking..." state
+- **Hide "Thinking..." when tool calls exist**: Don't show the "Thinking..." fallback text when the assistant message already has tool calls or thinking content
+
+```typescript
+// src/types/agent.ts — Shared types
+export interface AgentSSEEvent {
+  type: 'thinking' | 'tool_start' | 'tool_end' | 'message' | 'error' | 'done';
+  content?: string;
+  tool?: string;
+  service?: string;
+  params?: Record<string, unknown>;
+  result?: unknown;
+  elapsed?: number;
+  error?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  thinking?: string;       // Agent's reasoning before tool calls
+  toolCalls?: ToolCallInfo[];
+}
+
+export interface ToolCallInfo {
+  tool: string;
+  service: string;
+  params: Record<string, unknown>;
+  result?: unknown;
+  elapsed?: number;
+  status: 'executing' | 'success' | 'error';
+  error?: string;
+}
+```
+
 ```typescript
 // src/hooks/use-agent.ts — React hook for agent SSE
-import { useState, useCallback } from 'react';
-
-interface AgentStep {
-  tool: string;
-  input: Record<string, unknown>;
-  output: unknown;
-}
-
-interface AgentState {
-  steps: AgentStep[];
-  status: string;
-  output: string;
-  isRunning: boolean;
-}
+import { useState, useCallback, useRef } from 'react';
+import type { ChatMessage, ToolCallInfo, AgentSSEEvent } from '@/types/agent';
 
 export function useAgent() {
-  const [state, setState] = useState<AgentState>({
-    steps: [], status: '', output: '', isRunning: false,
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  // Ref for current messages — avoids stale closure in useCallback
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
 
-  const sendMessage = useCallback(async (input: string) => {
-    setState({ steps: [], status: 'Agent is thinking...', output: '', isRunning: true });
+  const sendMessage = useCallback(async (text: string) => {
+    const userMsg: ChatMessage = { role: 'user', content: text };
+    setMessages((prev) => [...prev, userMsg]);
+    setIsRunning(true);
 
-    const res = await fetch('/api/agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input }),
-    });
+    const toolCalls: ToolCallInfo[] = [];
+    let assistantContent = '';
+    let thinkingContent = '';
+    let isInterimContent = false; // true when content is from humanMessage, not agent
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    try {
+      // Send conversation history so the agent has multi-turn context
+      const history = messagesRef.current
+        .filter((m) => m.content)
+        .map((m) => ({ role: m.role, content: m.content }));
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history }),
+      });
 
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = JSON.parse(line.slice(6));
-        const eventType = line.includes('event: ') ? line.split('event: ')[1]?.split('\n')[0] : undefined;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-        if (data.message) setState(prev => ({ ...prev, status: data.message }));
-        if (data.tool) setState(prev => ({ ...prev, steps: [...prev.steps, data] }));
-        if (data.output) setState(prev => ({ ...prev, output: data.output, isRunning: false }));
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const part of parts) {
+          const dataLine = part.split('\n').find((l) => l.startsWith('data: '));
+          if (!dataLine) continue;
+          const event: AgentSSEEvent = JSON.parse(dataLine.slice(6));
+
+          switch (event.type) {
+            case 'tool_start':
+              toolCalls.push({
+                tool: event.tool!,
+                service: event.service || 'Other',
+                params: event.params || {},
+                status: 'executing',
+              });
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant') {
+                  return [...prev.slice(0, -1), { ...last, toolCalls: [...toolCalls] }];
+                }
+                return [...prev, { role: 'assistant', content: assistantContent, toolCalls: [...toolCalls] }];
+              });
+              break;
+
+            case 'tool_end': {
+              const idx = toolCalls.findIndex(
+                (tc) => tc.tool === event.tool && tc.status === 'executing',
+              );
+              if (idx >= 0) {
+                toolCalls[idx] = { ...toolCalls[idx], result: event.result, elapsed: event.elapsed, status: 'success' };
+              }
+              // IMPORTANT: Extract humanMessage from tool result as interim content.
+              // After tool_end, the agent makes a SECOND LLM call to summarize — this can
+              // take 30-60s on Groq. The tool result already has the answer in humanMessage.
+              // Mark as interim so the real 'message' event REPLACES it (not appends).
+              const resultObj = event.result as Record<string, unknown> | undefined;
+              if (!assistantContent && resultObj?.humanMessage && typeof resultObj.humanMessage === 'string') {
+                assistantContent = resultObj.humanMessage;
+                isInterimContent = true;
+              }
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant') {
+                  return [...prev.slice(0, -1), { ...last, content: assistantContent, toolCalls: [...toolCalls] }];
+                }
+                return prev;
+              });
+              break;
+            }
+
+            case 'message':
+              // IMPORTANT: If current content is interim (from humanMessage),
+              // REPLACE it with the agent's real response — don't append.
+              // Without this, the UI shows a garbled concat of raw tool output + agent summary.
+              if (isInterimContent) {
+                assistantContent = event.content!;
+                isInterimContent = false;
+              } else {
+                assistantContent += (assistantContent ? '\n' : '') + event.content;
+              }
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant') {
+                  return [...prev.slice(0, -1), { ...last, content: assistantContent }];
+                }
+                return [...prev, { role: 'assistant', content: assistantContent, toolCalls: [...toolCalls] }];
+              });
+              break;
+
+            case 'thinking':
+              thinkingContent += (thinkingContent ? '\n' : '') + event.content;
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant') {
+                  return [...prev.slice(0, -1), { ...last, thinking: thinkingContent }];
+                }
+                return [...prev, { role: 'assistant', content: assistantContent, thinking: thinkingContent, toolCalls: [...toolCalls] }];
+              });
+              break;
+
+            case 'done':
+              // Fallback: if no message was emitted but tool calls exist,
+              // synthesize content to clear the "Thinking..." state
+              if (!assistantContent && toolCalls.length > 0) {
+                assistantContent = 'Done — see tool results above.';
+                setMessages((prev) => {
+                  const last = prev[prev.length - 1];
+                  if (last?.role === 'assistant') {
+                    return [...prev.slice(0, -1), { ...last, content: assistantContent }];
+                  }
+                  return prev;
+                });
+              }
+              break;
+
+            case 'error':
+              setMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${event.error}` }]);
+              break;
+          }
+        }
       }
+    } catch (err) {
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: `Network error: ${err instanceof Error ? err.message : String(err)}`,
+      }]);
     }
+
+    setIsRunning(false);
   }, []);
 
-  return { ...state, sendMessage };
+  return { messages, isRunning, sendMessage };
 }
+```
+
+**Chat message component — markdown rendering + HashScan auto-links:**
+
+Install `react-markdown` (`npm install react-markdown`). LLM responses contain markdown (`**bold**`, lists, etc.) and Hedera entity IDs that should be clickable HashScan links.
+
+Set `NEXT_PUBLIC_HEDERA_NETWORK=testnet` in `.env.local` so the client knows which HashScan network to link.
+
+```tsx
+// src/components/chat-message.tsx
+import ReactMarkdown from 'react-markdown';
+
+const NETWORK = process.env.NEXT_PUBLIC_HEDERA_NETWORK || 'testnet';
+const HASHSCAN = `https://hashscan.io/${NETWORK}`;
+
+/** Auto-link Hedera IDs to HashScan. Runs before ReactMarkdown. */
+function linkifyHederaIds(text: string): string {
+  // Transaction IDs: 0.0.XXXXX@TIMESTAMP
+  text = text.replace(
+    /(?<!\[|\()(\d+\.\d+\.\d+@[\d.]+)(?!\]|\))/g,
+    (match) => `[${match}](${HASHSCAN}/transaction/${match})`,
+  );
+  // Entity IDs: 0.0.XXXXX (skip if already inside a link or followed by @)
+  text = text.replace(
+    /(?<!\[|\(|\/)(0\.0\.\d{4,})(?!\]|\)|@)/g,
+    (match) => `[${match}](${HASHSCAN}/account/${match})`,
+  );
+  return text;
+}
+
+function FormattedContent({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      components={{
+        a: ({ href, children }) => (
+          <a href={href} target="_blank" rel="noopener noreferrer"
+            className="text-emerald-400 underline hover:text-emerald-300">{children}</a>
+        ),
+        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+      }}
+    >
+      {linkifyHederaIds(content)}
+    </ReactMarkdown>
+  );
+}
+
+// Usage in the message component:
+// Replace raw text rendering with <FormattedContent content={message.content} />
+
+// IMPORTANT: Don't show "Thinking..." when tool calls or thinking content exist.
+{(message.content || (!message.toolCalls?.length && !message.thinking)) && (
+  <div className={...}>
+    {message.content ? <FormattedContent content={message.content} /> : <span>Thinking...</span>}
+  </div>
+)}
 ```
 
 ### Voice Input Pattern (Category B Only)
