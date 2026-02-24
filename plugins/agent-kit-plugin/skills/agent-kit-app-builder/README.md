@@ -139,7 +139,7 @@ Both demos use only testnet-compatible plugins by default. SaucerSwap and Bonzo 
 ## Troubleshooting
 
 **Build fails with missing env vars**
-Next.js evaluates server modules during `next build`. If env vars contain placeholders, the SDK throws a parse error. Use the lazy-init Proxy pattern from [`references/network-config.md`](references/network-config.md) to defer client initialization to runtime.
+Next.js evaluates server modules during `next build`. If env vars contain placeholders, the SDK throws a parse error. Use the lazy-init getter pattern from [`references/network-config.md`](references/network-config.md) to defer client initialization to runtime. Do NOT use `new Proxy({} as Client, ...)` — it breaks `instanceof Client` checks in third-party plugins.
 
 **Turbopack lockfile warning**
 If the project is nested under a parent directory with its own lockfile, add to `next.config.ts`:
@@ -178,3 +178,21 @@ The `memo` field in `create_memejob_token_tool` cannot be an empty string. Provi
 
 **Agent not calling tools correctly (Category B)**
 Make sure you installed the correct LangChain provider package (`@langchain/openai`, `@langchain/anthropic`, or `@langchain/groq`). Different LLMs have varying tool-calling quality — GPT-4o and Claude Sonnet are most reliable.
+
+**TypeScript "Type instantiation is excessively deep" on `createReactAgent` (Category B)**
+`createReactAgent({ llm, tools })` triggers deep type recursion. Fix: `createReactAgent({ llm, tools } as any)`.
+
+**TypeScript "Messages must have Symbol.iterator" on LangGraph stream (Category B)**
+`chunk.agent.messages` and `chunk.tools.messages` have a `Messages` type that isn't directly iterable with `for...of`. Fix: cast chunk to `any` and wrap with `Array.isArray()` before iterating.
+
+**TypeScript "Type 'unknown' is not assignable to type 'ReactNode'" in JSX**
+When `PipelineEvent.result` is `unknown`, React/TS rejects `{step.result && <JSX>}`. Fix: use `{step.result != null && <JSX>}`.
+
+**TypeScript "Cannot find name 'SpeechRecognition'" (Category B voice input)**
+`SpeechRecognition` and `SpeechRecognitionEvent` are not in standard TS DOM typings. Fix: use `any` casts or install `@types/dom-speech-recognition`.
+
+**`create-next-app` hangs on React Compiler prompt**
+Recent Next.js versions prompt interactively about React Compiler. Fix: add `--no-react-compiler` flag to `create-next-app`.
+
+**`create_topic_tool` returns wrong topicId**
+The raw result contains topicId as a nested Long object `{ shard, realm, num: { low: N } }`. The regex `0\.0\.\d+` on raw result may match the operator account ID from transactionId first. Fix: parse topicId from `parsed.humanMessage.match(/topic id (0\.0\.\d+)/i)` instead.
