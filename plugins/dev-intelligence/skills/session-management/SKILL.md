@@ -78,6 +78,54 @@ Keep the registry and debt tracker lean:
 
 See `references/archive-strategy.md` for detailed archival guidelines.
 
+## Self-Improvement via MEMORY.md
+
+MEMORY.md is Claude Code's auto-memory file — it's loaded into every system prompt automatically. Use it as a self-improvement loop that accumulates project-specific lessons across sessions.
+
+### Location
+```
+~/.claude/projects/<project-path-with-dashes>/memory/MEMORY.md
+```
+
+### When to Update MEMORY.md
+- **After any correction from the user** — the most important trigger. If the user corrects your approach, save the lesson immediately.
+- After discovering a non-obvious pattern or pitfall in the codebase
+- After learning a user preference (e.g., "always use X library", "never auto-commit")
+- After resolving a tricky bug whose root cause wasn't obvious
+
+### MEMORY.md Structure
+Organize by topic, not chronologically:
+```markdown
+# Project — Lessons Learned
+
+## Build & Tooling
+- [lesson]
+
+## Architecture Patterns
+- [lesson]
+
+## Testing
+- [lesson]
+
+## Common Pitfalls
+- [lesson]
+
+## Owner Preferences
+- [lesson]
+```
+
+### Size Budget
+Keep under 200 lines — this is loaded into every system prompt. If it grows too large:
+1. Merge related entries
+2. Remove lessons that are now obvious from context
+3. Create separate topic files (e.g., `debugging.md`) and link from MEMORY.md
+
+### What NOT to Save
+- Session-specific context (current task, in-progress work)
+- Information already in CLAUDE.md or project docs
+- Speculative or unverified conclusions
+- Temporary workarounds that have been properly fixed
+
 ## Session Start Workflow
 
 When resuming work on a project with session management set up:
@@ -85,8 +133,9 @@ When resuming work on a project with session management set up:
 1. **Read the registry:** `cat .claude/reports/_registry.md`
 2. **Read tech debt:** `cat .claude/reports/_tech-debt.md`
 3. **Check git state:** `git log --oneline -10` and `git status`
-4. **Summarize:** Tell the user what's active, what's pending, and suggest what to work on
-5. **Check for P0 debt:** If any P0 items exist, flag them for immediate attention
+4. **Review MEMORY.md lessons** relevant to the area being worked on (MEMORY.md is auto-loaded in system prompt)
+5. **Summarize:** Tell the user what's active, what's pending, and suggest what to work on
+6. **Check for P0 debt:** If any P0 items exist, flag them for immediate attention
 
 ## Session End Workflow
 
@@ -94,8 +143,9 @@ Before ending a session:
 
 1. **Update registry** with any work completed this session
 2. **Add tech debt** for anything discovered but not addressed
-3. **Archive** any resolved items past their retention period
-4. **Summarize** what was accomplished and what's next
+3. **Update MEMORY.md** with any corrections or lessons learned this session
+4. **Archive** any resolved items past their retention period
+5. **Summarize** what was accomplished and what's next
 
 ## Cross-References
 

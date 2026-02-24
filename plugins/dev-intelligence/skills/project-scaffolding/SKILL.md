@@ -32,16 +32,18 @@ Before scaffolding, detect the project's tech stack by scanning for manifest fil
 
 ## CLAUDE.md Generation
 
-Use the template from `references/claude-md-template.md` and fill in detected information:
+Use the template from `references/claude-md-template.md` and fill in detected information. **Target: under 200 lines.** Claude Code truncates CLAUDE.md after ~200 lines in the system prompt, so keep it lean.
 
 1. **Project Overview** — read `README.md` or `package.json` description
-2. **Build & Run Commands** — detected from manifest `scripts` section
-3. **Naming Conventions** — select from `references/naming-conventions.md` based on stack
-4. **Test Command** — detected or ask user
-5. **Lint Command** — detected or ask user
+2. **Build & Run Commands** — detected from manifest `scripts` section (keep 8-10 most-used, add "See [manifest] for full list")
+3. **Triggers** — map file patterns to docs/skills for on-demand deep context
+4. **Naming Conventions** — select from `references/naming-conventions.md` based on stack. If the table is large, move to `docs/CONVENTIONS.md` and reference from Triggers
+5. **Test Command** — detected or ask user
+6. **Lint Command** — detected or ask user
 
 ### What Gets Pre-Filled
-- Core Behaviors (generic best practices)
+- Core Behaviors (including self-improvement and parallel session rules)
+- Triggers section (generated from detected project structure)
 - Test-First Development rules
 - Git Commit Rules (conventional commits)
 - Forbidden Files (.env, credentials, node_modules, etc.)
@@ -53,12 +55,62 @@ Use the template from `references/claude-md-template.md` and fill in detected in
 - Stack-specific naming conventions
 - Any custom conventions the user wants
 
+## Triggers Generation
+
+The Triggers section maps file patterns to deeper documentation, enabling on-demand context loading without bloating CLAUDE.md.
+
+### How to Generate Triggers
+1. Scan project structure for distinct directories (e.g., `src/`, `lib/`, `tests/`, `docs/`)
+2. Identify existing documentation files (`docs/*.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`)
+3. Map each source directory to its most relevant doc or skill
+4. Include standard patterns: `Dockerfile` → deployment docs, `tests/` → testing docs, new files → conventions
+
+### Example Generated Triggers
+```markdown
+| File Pattern | Load |
+|---|---|
+| src/api/* | Read: docs/API.md |
+| src/components/* | Read: docs/COMPONENTS.md |
+| tests/* | Read: docs/TESTING.md |
+| Dockerfile, docker-compose* | Read: docs/DEPLOYMENT.md |
+| New .ts files | Read: docs/CONVENTIONS.md |
+```
+
+If no docs exist yet, generate stub documentation files with TODO placeholders during scaffolding.
+
+## MEMORY.md Seeding
+
+Seed the project's MEMORY.md with initial lessons from the detected stack. MEMORY.md is auto-loaded into every Claude Code system prompt, creating a self-improvement loop.
+
+### Location
+```
+~/.claude/projects/<project-path-with-dashes>/memory/MEMORY.md
+```
+
+Where `<project-path-with-dashes>` is the absolute project path with `/` replaced by `-` (e.g., `-Users-dev-myproject`).
+
+### What to Seed
+1. **Stack details** — language version, build tool, package manager
+2. **Architecture patterns** — module structure discovered during detection
+3. **Common pitfalls** for the detected stack:
+   - TypeScript: ESM import extensions, `tsconfig` strictness, type-only imports
+   - Python: virtual env activation, `__init__.py` requirements, type checking with mypy
+   - Rust: borrow checker common mistakes, feature flags, workspace patterns
+   - Go: module paths, exported vs unexported, error wrapping
+4. **Testing patterns** — framework, mock strategy, test file locations
+5. **Owner preferences** — any conventions the user specified during `/init`
+
+### Size Budget
+Keep under 55 lines initially — leave room for growth as the agent learns during sessions. The 200-line system prompt limit applies to MEMORY.md too.
+
 ## Directory Structure Creation
 
 Create the following structure:
 
 ```
 .claude/
+├── commands/
+│   └── parallel.md            ← multi-session coordination guide
 ├── reports/
 │   ├── _registry.md          ← from session-management references
 │   ├── _tech-debt.md         ← from session-management references
@@ -86,6 +138,8 @@ Create the following structure:
 2. Copy `registry-template.md` content to `.claude/reports/_registry.md` (empty, ready to use)
 3. Copy `tech-debt-template.md` content to `.claude/reports/_tech-debt.md` (empty, ready to use)
 4. Copy `post-edit-check.sh` to `.claude/scripts/` and make executable
+5. Create `.claude/commands/parallel.md` with project-specific file ownership boundaries
+6. Seed MEMORY.md at the auto-memory path (see MEMORY.md Seeding section above)
 
 ## Hook Setup
 
@@ -145,12 +199,15 @@ For example:
 ### Step 4: Confirm
 ```
 Created:
-- CLAUDE.md (project configuration)
+- CLAUDE.md (project configuration with Triggers, under 200 lines)
 - .claude/reports/ (15 category dirs + registry + tech debt tracker)
+- .claude/commands/parallel.md (multi-session coordination)
 - .claude/scripts/post-edit-check.sh (auto-validation hook)
 - .claude/settings.json (PostToolUse hook wired up)
+- MEMORY.md (seeded at ~/.claude/projects/.../memory/MEMORY.md)
 
-Ready to start developing with session tracking and auto-validation.
+Ready to start developing with session tracking, auto-validation,
+and self-improvement across sessions.
 ```
 
 ## Cross-References
