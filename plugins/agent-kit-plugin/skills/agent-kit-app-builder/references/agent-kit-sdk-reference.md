@@ -419,80 +419,217 @@ npm install @langchain/groq        # Groq (fast, free tier — see token limits 
 
 > **Note:** `langchain` (the main package) is NOT needed. The agent is created entirely with `@langchain/langgraph` + `@langchain/core` + your LLM provider package.
 
+### System Prompt with Operator Context
+
+**Critical for correctness.** Without a system prompt, the LLM has no context about which Hedera account to use. When a user says "check my balance", the agent will hallucinate an account ID (e.g., `0.0.12345`) instead of using the actual operator. Always inject a system prompt with the operator account ID and network:
+
+```typescript
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+
+const operatorId = process.env.HEDERA_OPERATOR_ID!;
+const network = process.env.HEDERA_NETWORK || 'testnet';
+
+const systemPrompt = `You are a Hedera DeFi assistant connected to ${network}.
+Operator account: ${operatorId}.
+When the user says "my balance" or "my account", use account ID ${operatorId}.
+After each tool call, summarize the result in plain language.
+Keep responses concise (2-3 sentences max).`;
+
+const result = await agent.invoke({
+  messages: [new SystemMessage(systemPrompt), new HumanMessage(userInput)],
+});
+```
+
+The system prompt also improves **speed** — guiding the LLM to the right tools faster and limiting response length with "keep responses concise".
+
+### Conversation History (Agent Memory)
+
+`createReactAgent` creates a stateless agent per request. For multi-turn conversations (e.g., "create a token" → "what's my balance for that token?"), the client must send conversation history and the server must reconstruct it as LangChain messages:
+
+```typescript
+import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
+
+// In the API route:
+const { message, history } = await req.json() as {
+  message: string;
+  history?: { role: 'user' | 'assistant'; content: string }[];
+};
+
+// Build: [SystemMessage, ...history as HumanMessage/AIMessage, new HumanMessage]
+const langchainMessages: BaseMessage[] = [new SystemMessage(systemPrompt)];
+if (history?.length) {
+  for (const h of history) {
+    langchainMessages.push(
+      h.role === 'user' ? new HumanMessage(h.content) : new AIMessage(h.content)
+    );
+  }
+}
+langchainMessages.push(new HumanMessage(message));
+
+const agentStream = await agent.stream(
+  { messages: langchainMessages },
+  { streamMode: 'updates' },
+);
+```
+
+> **TypeScript note:** Use `BaseMessage[]` for the array type — TypeScript will otherwise lock the array type to `SystemMessage[]` from the first element, rejecting `HumanMessage` and `AIMessage` pushes.
+
+On the client side, the hook must read the current messages (via a `useRef` to avoid stale closures in `useCallback`) and send them as `history`:
+
+```typescript
+const messagesRef = useRef<ChatMessage[]>([]);
+messagesRef.current = messages;
+
+// Inside sendMessage:
+const history = messagesRef.current
+  .filter((m) => m.content)
+  .map((m) => ({ role: m.role, content: m.content }));
+
+fetch('/api/agent', {
+  body: JSON.stringify({ message: text, history }),
+});
+```
+
+### Thinking Events (Agent Reasoning)
+
+When streaming, LangGraph agent messages can have both `content` (reasoning text) and `tool_calls` simultaneously. The content explains *why* the agent chose those tools. To surface this as a "thinking" bubble in the UI, emit it as a separate event type:
+
+```typescript
+// In the agent node handler:
+if (textContent && msg.tool_calls?.length) {
+  // Agent is reasoning before calling tools — emit as thinking
+  send({ type: 'thinking', content: textContent });
+} else if (textContent) {
+  // Final response text — emit as message
+  send({ type: 'message', content: textContent });
+}
+```
+
+On the client side, handle the `thinking` event to display it in a distinct styled bubble (italic, dimmer) above the tool call cards. This showcases the agent's decision-making process.
+
 ### Streaming Agent Responses via SSE
 
-For real-time pipeline visualization, stream agent execution via `agent.stream()`:
+For real-time pipeline visualization, stream agent execution via `agent.stream()`. This example includes all critical patterns: system prompt injection, thinking events, proper content extraction, and service classification.
+
+SSE event types emitted: `thinking`, `tool_start`, `tool_end`, `message`, `done`, `error`.
 
 ```typescript
 // In a Next.js API route (e.g., src/app/api/agent/route.ts)
+import { getToolkit } from '@/lib/toolkit';
+import { getLLM } from '@/lib/llm';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+
+// Map tool names to service categories for UI badges
+const TOOL_SERVICE_MAP: Record<string, string> = {
+  create_fungible_token_tool: 'HTS',
+  get_hbar_balance_query_tool: 'Account',
+  create_topic_tool: 'HCS',
+  // ... add all tools
+};
+
 export async function POST(req: Request) {
-  const { input } = await req.json();
+  const { message } = await req.json();
+  const toolkit = getToolkit();
+  const tools = toolkit.getTools();
+  const llm = getLLM();
+
+  // CRITICAL: Inject system prompt with operator context.
+  // Without this, the agent hallucinates account IDs.
+  const operatorId = process.env.HEDERA_OPERATOR_ID || 'unknown';
+  const network = process.env.HEDERA_NETWORK || 'testnet';
+  const systemPrompt = `You are a Hedera DeFi assistant connected to ${network}.
+Operator account: ${operatorId}.
+When the user says "my balance" or "my account", use account ID ${operatorId}.
+After each tool call, summarize the result in plain language.
+Keep responses concise (2-3 sentences max).`;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const agent = createReactAgent({ llm, tools } as any);
 
   const encoder = new TextEncoder();
-  const readableStream = new ReadableStream({
+  const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-        );
+      const send = (data: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
-      send('status', { message: 'Agent is thinking...' });
+      try {
+        const agentStream = await agent.stream(
+          { messages: [new SystemMessage(systemPrompt), new HumanMessage(message)] },
+          { streamMode: 'updates' },
+        );
 
-      // Stream using LangGraph's agent.stream()
-      const agentStream = await agent.stream(
-        { messages: [{ role: 'user', content: input }] },
-        { streamMode: 'updates' },
-      );
+        for await (const rawChunk of agentStream) {
+          const chunk = rawChunk as any;
 
-      let finalResponse = '';
-      for await (const rawUpdate of agentStream) {
-        // IMPORTANT: Cast to `any` — LangGraph's Messages type isn't directly
-        // iterable. Also use Array.isArray() as messages may not always be an array.
-        const update = rawUpdate as any;
+          // Agent node — contains AI reasoning, tool call decisions, and final responses
+          if (chunk.agent?.messages) {
+            const msgs = Array.isArray(chunk.agent.messages) ? chunk.agent.messages : [chunk.agent.messages];
+            for (const msg of msgs) {
+              // IMPORTANT: msg.content can be string OR array of { type: 'text', text: '...' }
+              let textContent = '';
+              if (typeof msg.content === 'string') {
+                textContent = msg.content.trim();
+              } else if (Array.isArray(msg.content)) {
+                textContent = msg.content
+                  .filter((b: any) => b.type === 'text' && b.text)
+                  .map((b: any) => b.text)
+                  .join('')
+                  .trim();
+              }
 
-        // Tool node updates contain tool call results
-        if (update.tools?.messages) {
-          const msgs = Array.isArray(update.tools.messages) ? update.tools.messages : [update.tools.messages];
-          for (const msg of msgs) {
-            send('tool_end', { tool: msg.name, output: msg.content });
-          }
-        }
-        // Agent node updates contain AI responses and tool call requests
-        if (update.agent?.messages) {
-          const msgs = Array.isArray(update.agent.messages) ? update.agent.messages : [update.agent.messages];
-          for (const msg of msgs) {
-            if (msg.tool_calls?.length) {
-              for (const tc of msg.tool_calls) {
-                send('tool_start', { tool: tc.name, input: tc.args });
+              // IMPORTANT: When content exists alongside tool_calls, it's the agent's
+              // REASONING about why it's calling those tools. Emit as 'thinking', not 'message'.
+              if (textContent && msg.tool_calls?.length) {
+                send({ type: 'thinking', content: textContent });
+              } else if (textContent) {
+                send({ type: 'message', content: textContent });
+              }
+
+              if (msg.tool_calls?.length) {
+                for (const tc of msg.tool_calls) {
+                  send({
+                    type: 'tool_start',
+                    tool: tc.name,
+                    service: TOOL_SERVICE_MAP[tc.name] || 'Other',
+                    params: tc.args,
+                  });
+                }
               }
             }
-            // IMPORTANT: msg.content can be a string OR an array of
-            // { type: 'text', text: '...' } blocks (varies by LLM provider).
-            let text = '';
-            if (typeof msg.content === 'string') {
-              text = msg.content.trim();
-            } else if (Array.isArray(msg.content)) {
-              text = msg.content
-                .filter((b: any) => b.type === 'text' && b.text)
-                .map((b: any) => b.text)
-                .join('')
-                .trim();
-            }
-            if (text) {
-              finalResponse = text;
+          }
+
+          // Tools node — contains tool execution results
+          if (chunk.tools?.messages) {
+            const msgs = Array.isArray(chunk.tools.messages) ? chunk.tools.messages : [chunk.tools.messages];
+            for (const msg of msgs) {
+              let parsed;
+              try {
+                parsed = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content;
+              } catch {
+                parsed = { raw: msg.content };
+              }
+              send({
+                type: 'tool_end',
+                tool: msg.name || 'unknown',
+                service: TOOL_SERVICE_MAP[msg.name] || 'Other',
+                result: parsed,
+              });
             }
           }
         }
+
+        send({ type: 'done' });
+      } catch (err: unknown) {
+        send({ type: 'error', error: err instanceof Error ? err.message : String(err) });
       }
 
-      send('result', { output: finalResponse });
-      send('done', {});
       controller.close();
     },
   });
 
-  return new Response(readableStream, {
+  return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -501,3 +638,5 @@ export async function POST(req: Request) {
   });
 }
 ```
+
+> **ReAct loop latency:** After a tool returns, LangGraph runs a **second** LLM inference to generate the summary response. With Groq + 30 tools, this can take 30-60s. The client hook should extract `humanMessage` from `tool_end` results as interim content so users see the answer immediately. See `frontend-patterns.md` > Pattern 5 for the full client hook.
