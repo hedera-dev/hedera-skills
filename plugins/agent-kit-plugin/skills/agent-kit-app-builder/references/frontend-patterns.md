@@ -256,84 +256,407 @@ export async function getNftInfo(tokenId: string, serialNumber: number) {
 
 ---
 
+### Pattern 4: Pipeline Execution with SSE (Both Categories)
+
+Server-side pipeline engine that chains toolkit tool calls sequentially, streaming progress to the client via Server-Sent Events. Shared by both Category A (fixed pipeline) and Category B (dynamic agent) demos.
+
+**Server — Pipeline Engine:**
+
+```typescript
+// src/lib/pipeline.ts — Shared pipeline execution engine
+import { HederaLangchainToolkit } from 'hedera-agent-kit';
+
+export interface PipelineStepDef {
+  stepId: string;
+  tool: string;           // Tool name to find in toolkit.getTools()
+  service: string;        // Badge label: "HTS", "HCS", "DeFi", etc.
+  params: Record<string, unknown>;
+}
+
+export interface PipelineEvent {
+  stepId: string;
+  tool: string;
+  service: string;
+  status: 'executing' | 'success' | 'error';
+  params?: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+  elapsed?: number;
+}
+
+export async function executePipeline(
+  toolkit: HederaLangchainToolkit,
+  steps: PipelineStepDef[],
+  onEvent: (event: PipelineEvent) => void,
+) {
+  const tools = toolkit.getTools();
+  const results: Record<string, unknown> = {};
+
+  for (const step of steps) {
+    onEvent({ stepId: step.stepId, tool: step.tool, service: step.service, status: 'executing', params: step.params });
+    const start = Date.now();
+
+    const tool = tools.find(t => t.name === step.tool);
+    if (!tool) {
+      onEvent({ stepId: step.stepId, tool: step.tool, service: step.service, status: 'error', error: `Tool not found: ${step.tool}` });
+      return results;
+    }
+
+    try {
+      // Resolve param references like "{{step1.tokenId}}" from previous results
+      const resolvedParams = resolveParams(step.params, results);
+      const result = await tool.invoke(resolvedParams);
+      results[step.stepId] = typeof result === 'string' ? JSON.parse(result) : result;
+      onEvent({
+        stepId: step.stepId, tool: step.tool, service: step.service,
+        status: 'success', result: results[step.stepId], elapsed: Date.now() - start,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      onEvent({ stepId: step.stepId, tool: step.tool, service: step.service, status: 'error', error: message, elapsed: Date.now() - start });
+      return results;
+    }
+  }
+  return results;
+}
+
+function resolveParams(params: Record<string, unknown>, results: Record<string, unknown>): Record<string, unknown> {
+  const resolved: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+      const path = value.slice(2, -2).split('.');
+      let ref: unknown = results;
+      for (const seg of path) ref = (ref as Record<string, unknown>)?.[seg];
+      resolved[key] = ref;
+    } else {
+      resolved[key] = value;
+    }
+  }
+  return resolved;
+}
+```
+
+**Server — SSE API Route:**
+
+```typescript
+// src/app/api/pipeline/route.ts — SSE endpoint for pipeline execution
+import { toolkit } from '@/lib/toolkit';
+import { executePipeline, PipelineStepDef, PipelineEvent } from '@/lib/pipeline';
+
+export async function POST(req: Request) {
+  const { steps } = await req.json() as { steps: PipelineStepDef[] };
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      };
+
+      await executePipeline(toolkit, steps, (ev: PipelineEvent) => {
+        send('step', ev);
+      });
+
+      send('done', {});
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
+}
+```
+
+**Client — SSE Consumer Hook:**
+
+```typescript
+// src/hooks/use-pipeline.ts — React hook for consuming pipeline SSE
+import { useState, useCallback } from 'react';
+
+interface PipelineStep {
+  stepId: string;
+  tool: string;
+  service: string;
+  status: 'pending' | 'executing' | 'success' | 'error';
+  params?: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+  elapsed?: number;
+}
+
+export function usePipeline() {
+  const [steps, setSteps] = useState<PipelineStep[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+
+  const runPipeline = useCallback(async (pipelineSteps: PipelineStep[]) => {
+    setSteps(pipelineSteps.map(s => ({ ...s, status: 'pending' })));
+    setIsRunning(true);
+
+    const res = await fetch('/api/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steps: pipelineSteps }),
+    });
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          setSteps(prev => prev.map(s =>
+            s.stepId === data.stepId ? { ...s, ...data } : s
+          ));
+        }
+      }
+    }
+
+    setIsRunning(false);
+  }, []);
+
+  return { steps, isRunning, runPipeline };
+}
+```
+
+### Pattern 5: LangChain Agent Integration (Category B Only)
+
+For agentic apps where the LLM decides which tools to call at runtime. See `references/agent-kit-sdk-reference.md` for the full agent initialization code.
+
+**Architecture:**
+
+```
+User (text or voice) → POST /api/agent { input }
+  → Server creates LangChain AgentExecutor with all hedera-agent-kit tools
+  → Agent reasons about which tools to call
+  → Each tool call emitted as SSE event
+  → Agent may chain multiple tool calls autonomously
+  → Final response streamed back
+```
+
+**Key differences from Pattern 4:**
+- Pipeline steps are **dynamic** — determined by the LLM at runtime, not predefined
+- Agent provides **reasoning** text explaining why it chose each tool
+- Multi-step operations are handled **autonomously** (e.g., "swap and then check balance")
+- The `intermediateSteps` array from `AgentExecutor` provides the tool call sequence
+
+**Client — Agent Hook:**
+
+```typescript
+// src/hooks/use-agent.ts — React hook for agent SSE
+import { useState, useCallback } from 'react';
+
+interface AgentStep {
+  tool: string;
+  input: Record<string, unknown>;
+  output: unknown;
+}
+
+interface AgentState {
+  steps: AgentStep[];
+  status: string;
+  output: string;
+  isRunning: boolean;
+}
+
+export function useAgent() {
+  const [state, setState] = useState<AgentState>({
+    steps: [], status: '', output: '', isRunning: false,
+  });
+
+  const sendMessage = useCallback(async (input: string) => {
+    setState({ steps: [], status: 'Agent is thinking...', output: '', isRunning: true });
+
+    const res = await fetch('/api/agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input }),
+    });
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+        const eventType = line.includes('event: ') ? line.split('event: ')[1]?.split('\n')[0] : undefined;
+
+        if (data.message) setState(prev => ({ ...prev, status: data.message }));
+        if (data.tool) setState(prev => ({ ...prev, steps: [...prev.steps, data] }));
+        if (data.output) setState(prev => ({ ...prev, output: data.output, isRunning: false }));
+      }
+    }
+  }, []);
+
+  return { ...state, sendMessage };
+}
+```
+
+### Voice Input Pattern (Category B Only)
+
+Use the Web Speech API (`SpeechRecognition`) for voice-to-text input in the browser. No server-side processing or API keys needed.
+
+```typescript
+// src/hooks/use-voice-input.ts
+import { useState, useCallback, useRef } from 'react';
+
+export function useVoiceInput(onResult: (transcript: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error('Speech recognition not supported in this browser');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      onResult(transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [onResult]);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  return { isListening, startListening, stopListening };
+}
+```
+
+**Usage in a component:**
+
+```tsx
+const { isListening, startListening, stopListening } = useVoiceInput((transcript) => {
+  setInput(transcript);
+  sendMessage(transcript);
+});
+
+// Microphone button
+<Button
+  variant={isListening ? "destructive" : "outline"}
+  size="icon"
+  onClick={isListening ? stopListening : startListening}
+>
+  {isListening ? <MicOff /> : <Mic />}
+</Button>
+```
+
+> **Browser support:** Web Speech API works in Chrome, Edge, and Safari. Firefox has limited support. Always provide the text input as a fallback.
+
+---
+
 ## UI Component Patterns
 
-### Account Overview Card
+### Pipeline Visualizer (Shared by Both Demo Categories)
 
-**Data requirements:** HBAR balance, account ID, token count, key type.
+The pipeline visualizer renders a vertical list of step cards showing tool execution progress. Used by both Category A (fixed pipeline) and Category B (dynamic agent) demos.
 
 ```typescript
-interface AccountCardProps {
-  accountId: string;
-  hbarBalance: string;     // e.g., "125.5 ℏ"
-  tokenCount: number;
-  nftCount: number;
+interface PipelineStep {
+  stepId: string;
+  tool: string;            // e.g., "memejob_create", "saucerswap_add_liquidity"
+  service: 'HTS' | 'HCS' | 'DeFi' | 'Account' | 'EVM' | 'Query';
+  status: 'pending' | 'executing' | 'success' | 'error';
+  params?: Record<string, unknown>;    // Collapsible input parameters
+  result?: Record<string, unknown>;    // Output with HashScan links
+  elapsed?: number;                     // Milliseconds
+  reasoning?: string;                   // Agent's reasoning (Category B only)
+}
+
+interface PipelineVisualizerProps {
+  steps: PipelineStep[];
+  isRunning: boolean;
 }
 ```
 
-### Token Portfolio Table
+**Step card rendering:**
+- Tool name in monospace font (e.g., `memejob_create`)
+- Service badge (colored: HTS=green, HCS=blue, DeFi=purple, Account=gray)
+- Status indicator: spinner (executing), checkmark (success), X (error)
+- Collapsible params/result sections
+- HashScan links on all entity IDs in results (tokenId, topicId, transactionId)
+- Elapsed time in milliseconds
 
-**Data requirements:** Token name, symbol, balance, token ID.
+### Account Dashboard Panel (Category B)
+
+Shows the operator's account state, auto-refreshes after each agent operation.
 
 ```typescript
-interface TokenRow {
-  tokenId: string;         // "0.0.12345"
-  name: string;            // "DemoToken"
-  symbol: string;          // "DMT"
+interface AccountDashboardProps {
+  accountId: string;
+  hbarBalance: string;           // e.g., "125.5 ℏ"
+  tokens: TokenBalance[];        // Fungible token balances
+  recentTransactions: Transaction[];
+}
+
+interface TokenBalance {
+  tokenId: string;
+  name: string;
+  symbol: string;
   balance: number;
   decimals: number;
-  hashScanUrl: string;     // "https://hashscan.io/testnet/token/0.0.12345"
+  hashScanUrl: string;
 }
-```
 
-### Token Creation Form
-
-**Fields:** name (string), symbol (string, 3-8 chars), initial supply (number), decimals (0-18, default: 0).
-
-> **Default decimals to 0** for demo/launchpad apps. Decimals of 0 means whole tokens (1 token = 1 unit). This is simpler for users to understand. Use higher decimals (e.g., 8 or 18) only when fractional tokens are needed.
-
-### Transfer Dialog
-
-**Fields:** recipient account ID (`0.0.XXXXX` format), amount, token selector dropdown.
-
-### HCS Message Feed
-
-**Data requirements:** Message content (base64 decoded), sequence number, consensus timestamp.
-
-```typescript
-interface HcsMessage {
-  sequenceNumber: number;
-  consensusTimestamp: string;
-  content: string;         // Base64 decoded message body
-  payerAccountId: string;
-}
-```
-
-### NFT Gallery Grid
-
-**Data requirements:** Token ID, serial number, metadata (name, description, image URL).
-
-```typescript
-interface NftCard {
-  tokenId: string;
-  serialNumber: number;
-  name: string;            // From metadata
-  description: string;     // From metadata
-  imageUrl: string;        // From metadata, with fallback placeholder
-}
-```
-
-### Transaction History Table
-
-**Data requirements:** Timestamp, type, status, transaction hash, HashScan link.
-
-```typescript
-interface TransactionRow {
+interface Transaction {
   transactionId: string;
-  type: string;            // "CRYPTOTRANSFER", "TOKENCREATION", etc.
-  status: string;          // "SUCCESS" or error
+  type: string;
+  status: string;
   timestamp: string;
   hashScanUrl: string;
+}
+```
+
+### Launch Card (Category A)
+
+After a pipeline completes, shows a summary card with all created resources.
+
+```typescript
+interface LaunchCardProps {
+  tokenId: string;
+  tokenName: string;
+  tokenSymbol: string;
+  topicId: string;
+  poolInfo?: { lpTokenId: string; poolUrl: string };
+  hashScanLinks: { label: string; url: string }[];
 }
 ```
 
