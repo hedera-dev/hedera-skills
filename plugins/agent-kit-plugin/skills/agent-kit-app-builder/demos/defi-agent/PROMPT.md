@@ -39,6 +39,14 @@ Requirements:
 - Account dashboard auto-refreshes after each agent operation completes
 - Voice input with microphone button (Web Speech API) — graceful fallback if browser doesn't support it
 - Loading states, toast notifications (use sonner, not shadcn toast), network badge, LLM provider indicator in header
-- Use the lazy-init Proxy pattern for the Hedera client (see network-config.md) so `next build` works without env vars
+- Use the lazy-init getter pattern for the Hedera client (see network-config.md) so `next build` works without env vars. Do NOT use `new Proxy({} as Client, ...)` — it breaks `instanceof Client` checks in third-party plugins like Memejob
+
+TypeScript notes:
+- Use `--no-react-compiler` when running `create-next-app` (it prompts interactively otherwise)
+- `createReactAgent({ llm, tools })` causes "Type instantiation is excessively deep" — cast: `createReactAgent({ llm, tools } as any)`
+- LangGraph stream chunks: `chunk.agent.messages` and `chunk.tools.messages` are not directly iterable — cast chunk to `any` and use `Array.isArray()` before iterating
+- `SpeechRecognition` and `SpeechRecognitionEvent` types don't exist in standard TS DOM typings — use `any` casts
+- For dynamic LLM provider imports (auto-detect from env vars), use `require()` with eslint-disable `@typescript-eslint/no-require-imports`
+- Pipeline tool call `result` is typed as `unknown` — use `result != null && <JSX>` (not `result && <JSX>`)
 
 After building the app, use the Hedera MCP server to verify the operator account exists and has HBAR balance.

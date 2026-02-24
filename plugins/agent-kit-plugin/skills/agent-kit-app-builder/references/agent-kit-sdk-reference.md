@@ -363,14 +363,10 @@ function createLLM() {
 const llm = createLLM();
 const tools = toolkit.getTools();
 
-const agent = createReactAgent({
-  llm,
-  tools,
-  prompt: `You are a Hedera DeFi assistant. You help users interact with the Hedera network.
-You can create tokens, transfer HBAR, create meme coins, and more.
-Always confirm what you're about to do before executing transactions.
-After each operation, provide the transaction ID and a HashScan link.`,
-});
+// IMPORTANT: TypeScript may throw "Type instantiation is excessively deep and possibly infinite"
+// on createReactAgent({ llm, tools }). Fix with `as any` cast:
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const agent = createReactAgent({ llm, tools } as any);
 
 // 5. Execute with user input
 const result = await agent.invoke({
@@ -379,14 +375,29 @@ const result = await agent.invoke({
 // result.messages — array of BaseMessage objects (user, AI, tool calls, tool results)
 // The last AI message contains the final response
 
-// 6. Or stream for real-time updates
+// 6. Or stream for real-time updates (use 'updates' mode for SSE)
 const stream = await agent.stream(
   { messages: [{ role: 'user', content: 'What is my HBAR balance?' }] },
-  { streamMode: 'values' },
+  { streamMode: 'updates' },
 );
-for await (const { messages } of stream) {
-  // Each iteration yields the full message list so far
-  // Use this for SSE streaming in API routes
+for await (const rawChunk of stream) {
+  // IMPORTANT: LangGraph stream chunks have typed Messages that aren't directly
+  // iterable with for...of. Cast to `any` and use Array.isArray():
+  const chunk = rawChunk as any;
+
+  if (chunk.agent?.messages) {
+    const msgs = Array.isArray(chunk.agent.messages) ? chunk.agent.messages : [chunk.agent.messages];
+    for (const msg of msgs) {
+      // msg.content = AI text response
+      // msg.tool_calls = array of { name, args } the agent wants to invoke
+    }
+  }
+  if (chunk.tools?.messages) {
+    const msgs = Array.isArray(chunk.tools.messages) ? chunk.tools.messages : [chunk.tools.messages];
+    for (const msg of msgs) {
+      // msg.name = tool name, msg.content = tool result (JSON string)
+    }
+  }
 }
 ```
 
@@ -435,19 +446,22 @@ export async function POST(req: Request) {
       );
 
       let finalResponse = '';
-      for await (const update of agentStream) {
+      for await (const rawUpdate of agentStream) {
+        // IMPORTANT: Cast to `any` — LangGraph's Messages type isn't directly
+        // iterable. Also use Array.isArray() as messages may not always be an array.
+        const update = rawUpdate as any;
+
         // Tool node updates contain tool call results
-        if (update.tools) {
-          for (const msg of update.tools.messages) {
-            send('tool_call', {
-              tool: msg.name,
-              output: msg.content,
-            });
+        if (update.tools?.messages) {
+          const msgs = Array.isArray(update.tools.messages) ? update.tools.messages : [update.tools.messages];
+          for (const msg of msgs) {
+            send('tool_end', { tool: msg.name, output: msg.content });
           }
         }
-        // Agent node updates contain AI responses
-        if (update.agent) {
-          for (const msg of update.agent.messages) {
+        // Agent node updates contain AI responses and tool call requests
+        if (update.agent?.messages) {
+          const msgs = Array.isArray(update.agent.messages) ? update.agent.messages : [update.agent.messages];
+          for (const msg of msgs) {
             if (msg.tool_calls?.length) {
               for (const tc of msg.tool_calls) {
                 send('tool_start', { tool: tc.name, input: tc.args });

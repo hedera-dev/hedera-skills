@@ -29,6 +29,11 @@ Requirements:
 - All entity IDs in results should be clickable HashScan links
 - Loading states, toast notifications (use sonner, not shadcn toast), network badge showing "Testnet"
 - No LLM or AI agent — this is a regular app using the agent kit as a function library
-- Use the lazy-init Proxy pattern for the Hedera client (see network-config.md) so `next build` works without env vars
+- Use the lazy-init getter pattern for the Hedera client (see network-config.md) so `next build` works without env vars. Do NOT use `new Proxy({} as Client, ...)` — it breaks `instanceof Client` checks in third-party plugins like Memejob
+
+TypeScript notes:
+- Use `--no-react-compiler` when running `create-next-app` (it prompts interactively otherwise)
+- Pipeline step `result` is typed as `unknown` — use `step.result != null && <JSX>` (not `step.result && <JSX>`) to avoid "Type 'unknown' is not assignable to type 'ReactNode'" errors
+- `create_topic_tool` returns topicId as a nested Long object `{ shard, realm, num: { low: N } }` — parse from `humanMessage` instead: `parsed.humanMessage.match(/topic id (0\.0\.\d+)/i)`
 
 After building the app, use the Hedera MCP server to verify the operator account has sufficient HBAR balance for the launch.

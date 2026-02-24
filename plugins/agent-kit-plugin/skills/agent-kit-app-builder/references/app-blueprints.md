@@ -61,24 +61,27 @@ User fills a config form and clicks "Launch". Six steps execute visually:
 ### Pipeline Step Definitions (for `executePipeline()`)
 
 ```typescript
+// Note: PipelineStepDef includes a `label` field for human-readable step names in the UI
 function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
   return [
     {
       stepId: 'create-token',
       tool: 'create_memejob_token_tool',
       service: 'HTS',
+      label: 'Create meme token',
       params: {
         required: {
           name: config.tokenName,
           symbol: config.tokenSymbol,
-          memo: config.metadataIpfsPath || '',
+          memo: config.description || config.tokenName,  // memo cannot be empty
         },
       },
     },
     {
       stepId: 'buy-initial',
       tool: 'buy_memejob_token_tool',
-      service: 'DeFi',
+      service: 'HTS',
+      label: 'Buy initial position',
       params: {
         required: {
           tokenId: '{{create-token.tokenId}}',
@@ -90,6 +93,7 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
       stepId: 'verify-token',
       tool: 'get_token_info_query_tool',
       service: 'Query',
+      label: 'Verify token on-chain',
       params: {
         tokenId: '{{create-token.tokenId}}',
       },
@@ -98,6 +102,7 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
       stepId: 'create-topic',
       tool: 'create_topic_tool',
       service: 'HCS',
+      label: 'Create community topic',
       params: {
         memo: `Community: ${config.tokenName} ($${config.tokenSymbol})`,
       },
@@ -106,6 +111,7 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
       stepId: 'announce',
       tool: 'submit_topic_message_tool',
       service: 'HCS',
+      label: 'Post launch announcement',
       params: {
         topicId: '{{create-topic.topicId}}',
         message: JSON.stringify({
@@ -122,6 +128,7 @@ function buildLaunchSteps(config: LaunchConfig): PipelineStepDef[] {
       stepId: 'verify-balance',
       tool: 'get_account_token_balances_query_tool',
       service: 'Query',
+      label: 'Verify tokens in wallet',
       params: {
         accountId: process.env.HEDERA_OPERATOR_ID!,
       },

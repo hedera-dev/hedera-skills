@@ -16,8 +16,8 @@ Implementation patterns for building polished Hedera-powered frontends with Reac
 When asked to build a Hedera app, follow this sequence:
 
 ```bash
-# 1. Create Next.js project (pipe "no" to decline React Compiler prompt)
-echo "no" | npx create-next-app@latest my-hedera-app --typescript --tailwind --app --src-dir --no-eslint --use-npm --import-alias "@/*"
+# 1. Create Next.js project
+npx create-next-app@latest my-hedera-app --typescript --tailwind --app --src-dir --no-import-alias --turbopack --no-react-compiler
 
 # 2. Install Hedera dependencies
 cd my-hedera-app
@@ -37,7 +37,7 @@ cp templates/env.example .env.local
 # Fill in HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY, HEDERA_NETWORK, NEXT_PUBLIC_HEDERA_NETWORK
 ```
 
-> **Note:** `create-next-app` now prompts about React Compiler — pipe `echo "no"` for non-interactive use. The shadcn `toast` component is deprecated; use `sonner` instead (simpler API: just call `toast("message")`). Use `--yes` flag to skip shadcn confirmation prompts.
+> **Note:** `create-next-app` now prompts about React Compiler — use `--no-react-compiler` to skip it non-interactively. The shadcn `toast` component is deprecated; use `sonner` instead (simpler API: just call `toast("message")`). Use `--yes` flag to skip shadcn confirmation prompts.
 
 ### Suggested File Structure
 
@@ -76,40 +76,31 @@ Best for straightforward single operations like balance queries and simple trans
 // src/lib/hedera.ts — Shared client singleton (lazy-init for Next.js build compatibility)
 import { Client, PrivateKey, AccountId } from '@hashgraph/sdk';
 
-/** Auto-detect DER vs hex (ECDSA) private key format */
-function parsePrivateKey(key: string): PrivateKey {
-  const trimmed = key.trim().replace(/^0x/, '');
-  if (trimmed.startsWith('302')) {
-    return PrivateKey.fromStringDer(trimmed);
-  }
-  return PrivateKey.fromStringECDSA(trimmed);
-}
-
-const network = process.env.HEDERA_NETWORK || 'testnet';
-const operatorId = process.env.HEDERA_OPERATOR_ID || '';
-
-// Lazy-init: avoids build-time crash with placeholder env vars
+// Lazy getter: defers Client creation to first call so `next build`
+// succeeds even when env vars contain placeholders.
+//
+// IMPORTANT: Do NOT use a Proxy pattern (new Proxy({} as Client, ...)).
+// Third-party plugins (e.g., Memejob) do `instanceof Client` checks
+// internally, and a Proxy wrapping `{}` will fail those checks with:
+// "Failed to initialize NativeAdapter"
 let _client: Client | null = null;
-function getClient(): Client {
+
+export function getClient(): Client {
   if (!_client) {
-    const id = process.env.HEDERA_OPERATOR_ID;
-    const key = process.env.HEDERA_OPERATOR_KEY;
-    if (!id || !key) throw new Error('Missing HEDERA_OPERATOR_ID or HEDERA_OPERATOR_KEY');
+    const rawKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '');
+    const operatorKey = rawKey.startsWith('302')
+      ? PrivateKey.fromStringDer(rawKey)
+      : PrivateKey.fromStringECDSA(rawKey);
+
+    const network = process.env.HEDERA_NETWORK || 'testnet';
     _client = network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
-    _client.setOperator(AccountId.fromString(id), parsePrivateKey(key));
+    _client.setOperator(
+      AccountId.fromString(process.env.HEDERA_OPERATOR_ID!),
+      operatorKey,
+    );
   }
   return _client;
 }
-
-const client = new Proxy({} as Client, {
-  get(_, prop) {
-    const c = getClient();
-    const val = (c as any)[prop];
-    return typeof val === 'function' ? (val as Function).bind(c) : val;
-  },
-});
-
-export { client, network, operatorId };
 ```
 
 ```typescript
@@ -151,43 +142,41 @@ import {
   coreConsensusQueryPlugin,
   AgentMode,
 } from 'hedera-agent-kit';
-import { Client, PrivateKey } from '@hashgraph/sdk';
+import { getClient } from './hedera';
 
-const operatorKey = process.env.HEDERA_OPERATOR_KEY!.trim().replace(/^0x/, '').startsWith('302')
-  ? PrivateKey.fromStringDer(process.env.HEDERA_OPERATOR_KEY!)
-  : PrivateKey.fromStringECDSA(process.env.HEDERA_OPERATOR_KEY!.replace(/^0x/, ''));
+// Lazy singleton: toolkit is only created when first called (at request time),
+// not at module import time. This keeps `next build` happy.
+let _toolkit: HederaLangchainToolkit | null = null;
 
-const client = Client.forTestnet().setOperator(
-  process.env.HEDERA_OPERATOR_ID!,
-  operatorKey
-);
-
-const toolkit = new HederaLangchainToolkit({
-  client,
-  configuration: {
-    tools: [],
-    context: { mode: AgentMode.AUTONOMOUS },
-    plugins: [
-      coreTokenPlugin,
-      coreTokenQueryPlugin,
-      coreAccountQueryPlugin,
-      coreConsensusPlugin,
-      coreConsensusQueryPlugin,
-    ],
-  },
-});
-
-export { toolkit };
+export function getToolkit(): HederaLangchainToolkit {
+  if (!_toolkit) {
+    _toolkit = new HederaLangchainToolkit({
+      client: getClient(),  // returns a REAL Client (not a Proxy)
+      configuration: {
+        tools: [],
+        context: { mode: AgentMode.AUTONOMOUS },
+        plugins: [
+          coreTokenPlugin,
+          coreTokenQueryPlugin,
+          coreAccountQueryPlugin,
+          coreConsensusPlugin,
+          coreConsensusQueryPlugin,
+        ],
+      },
+    });
+  }
+  return _toolkit;
+}
 ```
 
 ```typescript
 // src/app/api/tokens/create/route.ts — Token creation via Agent Kit
-import { toolkit } from '@/lib/toolkit';
+import { getToolkit } from '@/lib/toolkit';
 
 export async function POST(req: Request) {
   const { name, symbol, initialSupply, decimals } = await req.json();
 
-  const tools = toolkit.getTools();
+  const tools = getToolkit().getTools();
   const createTokenTool = tools.find(t => t.name.includes('create_fungible_token'));
 
   if (!createTokenTool) {
@@ -270,6 +259,7 @@ export interface PipelineStepDef {
   stepId: string;
   tool: string;           // Tool name to find in toolkit.getTools()
   service: string;        // Badge label: "HTS", "HCS", "DeFi", etc.
+  label: string;          // Human-readable step name for the UI
   params: Record<string, unknown>;
 }
 
@@ -277,9 +267,10 @@ export interface PipelineEvent {
   stepId: string;
   tool: string;
   service: string;
+  label: string;
   status: 'executing' | 'success' | 'error';
   params?: Record<string, unknown>;
-  result?: unknown;
+  result?: unknown;       // Note: typed as `unknown` — use `!= null` checks in JSX, not truthiness
   error?: string;
   elapsed?: number;
 }
@@ -535,12 +526,18 @@ Use the Web Speech API (`SpeechRecognition`) for voice-to-text input in the brow
 // src/hooks/use-voice-input.ts
 import { useState, useCallback, useRef } from 'react';
 
+// IMPORTANT: SpeechRecognition and SpeechRecognitionEvent types are not available
+// in standard TypeScript DOM typings. Use `any` casts to avoid TS errors.
+// Alternatively install @types/dom-speech-recognition, but `any` is simpler.
+
 export function useVoiceInput(onResult: (transcript: string) => void) {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   const startListening = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.error('Speech recognition not supported in this browser');
       return;
@@ -551,9 +548,10 @@ export function useVoiceInput(onResult: (transcript: string) => void) {
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0][0].transcript;
-      onResult(transcript);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0]?.[0]?.transcript;
+      if (transcript) onResult(transcript);
       setIsListening(false);
     };
 
@@ -718,4 +716,58 @@ All Hedera operations should go through server-side API routes. Never expose pri
 
 ```
 User Action → React Component → fetch('/api/...') → API Route → SDK/Agent Kit → Hedera Network → Response → UI Update
+```
+
+---
+
+## TypeScript Gotchas
+
+Common TypeScript issues encountered when building Hedera apps with these patterns:
+
+### `unknown` type in JSX conditionals
+
+When `PipelineEvent.result` is typed as `unknown`, React/TS rejects `{step.result && <JSX>}` with "Type 'unknown' is not assignable to type 'ReactNode'". Use explicit null checks:
+
+```tsx
+// BAD — TypeScript error
+{step.result && <div>...</div>}
+
+// GOOD — explicit null check
+{step.result != null && <div>...</div>}
+```
+
+### `createReactAgent` deep type instantiation
+
+`createReactAgent({ llm, tools })` may fail with "Type instantiation is excessively deep and possibly infinite." Fix with an `any` cast:
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const agent = createReactAgent({ llm, tools } as any);
+```
+
+### LangGraph stream chunk types
+
+`agent.stream()` with `streamMode: 'updates'` returns chunks where `chunk.agent.messages` and `chunk.tools.messages` have a `Messages` type that isn't directly iterable with `for...of`. Cast the chunk and use `Array.isArray()`:
+
+```typescript
+for await (const rawChunk of agentStream) {
+  const chunk = rawChunk as any;
+  if (chunk.agent?.messages) {
+    const msgs = Array.isArray(chunk.agent.messages) ? chunk.agent.messages : [chunk.agent.messages];
+    for (const msg of msgs) { /* ... */ }
+  }
+}
+```
+
+### Web Speech API types
+
+`SpeechRecognition` and `SpeechRecognitionEvent` are not in standard TypeScript DOM typings. Use `any` casts (see Voice Input Pattern above) or install `@types/dom-speech-recognition`.
+
+### Dynamic LLM provider imports
+
+When auto-detecting LLM from env vars, use `require()` instead of top-level imports (avoids bundling all providers). Add eslint disable:
+
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ChatGroq } = require('@langchain/groq');
 ```

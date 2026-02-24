@@ -68,20 +68,12 @@ function getClient(): Client {
   return _client;
 }
 
-// Proxy allows importing `client` and using it like a normal Client instance
-// while deferring actual initialization to first use.
-const client = new Proxy({} as Client, {
-  get(_, prop) {
-    const c = getClient();
-    const val = (c as any)[prop];
-    return typeof val === 'function' ? (val as Function).bind(c) : val;
-  },
-});
-
-export { client, network, operatorId };
+export { getClient, network, operatorId };
 ```
 
-> **Why lazy init?** During `next build`, Next.js pre-renders and evaluates all server modules. If the Hedera client is created at module scope with placeholder env vars (like `0.0.XXXXX` in a template `.env.local`), the SDK throws a parse error and the build fails. The Proxy pattern defers initialization until the first API route actually calls the client at runtime.
+> **Why lazy init?** During `next build`, Next.js pre-renders and evaluates all server modules. If the Hedera client is created at module scope with placeholder env vars (like `0.0.XXXXX` in a template `.env.local`), the SDK throws a parse error and the build fails. The lazy getter defers initialization until the first API route actually calls `getClient()` at runtime.
+>
+> **IMPORTANT: Do NOT use a `new Proxy({} as Client, ...)` wrapper.** Third-party plugins (e.g., Memejob) do `instanceof Client` checks internally. A Proxy wrapping `{}` fails those checks with: `"Failed to initialize NativeAdapter"`. Always use the lazy getter pattern that returns a **real** `Client` instance.
 
 ### Supported Key Formats
 
