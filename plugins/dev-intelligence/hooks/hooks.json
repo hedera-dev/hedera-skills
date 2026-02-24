@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $CLAUDE_PLUGIN_DIR/scripts/post-edit-check.sh"
+        }
+      ]
+    }
+  ]
+}
