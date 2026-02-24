@@ -33,6 +33,7 @@ Requirements:
 
 TypeScript notes:
 - Use `--no-react-compiler` when running `create-next-app` (it prompts interactively otherwise)
+- After scaffolding, replace `next.config.ts` with `turbopack: { root: path.resolve(__dirname) }` to silence the lockfile warning
 - Pipeline step `result` is typed as `unknown` — use `step.result != null && <JSX>` (not `step.result && <JSX>`) to avoid "Type 'unknown' is not assignable to type 'ReactNode'" errors
 - `create_topic_tool` returns topicId as a nested Long object `{ shard, realm, num: { low: N } }` — parse from `humanMessage` instead: `parsed.humanMessage.match(/topic id (0\.0\.\d+)/i)`
 

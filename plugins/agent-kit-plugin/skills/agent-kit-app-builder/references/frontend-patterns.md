@@ -27,10 +27,18 @@ npm install hedera-agent-kit @hashgraph/sdk dotenv
 npx shadcn@latest init -d --force
 npx shadcn@latest add button card input dialog label sonner table badge tabs separator --yes
 
-# 4. Fix Turbopack lockfile warning (common when project is nested under a parent with its own lockfile)
-# Add to next.config.ts:
-#   import path from "path";
-#   turbopack: { root: path.resolve(__dirname) }
+# 4. Fix Turbopack lockfile warning — ALWAYS do this.
+# Replace next.config.ts contents with:
+cat > next.config.ts << 'CONF'
+import type { NextConfig } from "next";
+import path from "path";
+
+const nextConfig: NextConfig = {
+  turbopack: { root: path.resolve(__dirname) },
+};
+
+export default nextConfig;
+CONF
 
 # 5. Create .env.local
 cp templates/env.example .env.local

@@ -43,6 +43,7 @@ Requirements:
 
 TypeScript notes:
 - Use `--no-react-compiler` when running `create-next-app` (it prompts interactively otherwise)
+- After scaffolding, replace `next.config.ts` with `turbopack: { root: path.resolve(__dirname) }` to silence the lockfile warning
 - `createReactAgent({ llm, tools })` causes "Type instantiation is excessively deep" — cast: `createReactAgent({ llm, tools } as any)`
 - LangGraph stream chunks: `chunk.agent.messages` and `chunk.tools.messages` are not directly iterable — cast chunk to `any` and use `Array.isArray()` before iterating
 - `SpeechRecognition` and `SpeechRecognitionEvent` types don't exist in standard TS DOM typings — use `any` casts
