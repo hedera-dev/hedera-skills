@@ -32,7 +32,7 @@ See `templates/env.example` for a complete `.env` template.
 ## Client Initialization by Network
 
 ```typescript
-import { Client, PrivateKey, AccountId } from '@hiero-ledger/sdk';
+import { Client, PrivateKey, AccountId } from '@hashgraph/sdk';
 
 /**
  * Parse a private key from either DER-encoded or hex (ECDSA) format.

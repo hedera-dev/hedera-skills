@@ -52,10 +52,10 @@ Both categories feature a **pipeline visualizer** showing each agent kit tool ca
 
 ## What You Can Build
 
-| Blueprint | Category | Description | Hedera Services | LLM Key? |
-|-----------|----------|-------------|-----------------|----------|
-| **Meme Coin Launchpad** | A | One-click meme token launch with bonding curve, community topic, and DEX liquidity — chaining 3 plugins in a visible pipeline | HTS (Memejob), HCS, DeFi (SaucerSwap) | No |
-| **Hedera DeFi Agent** | B | Voice/text DeFi assistant — AI agent executes across all Hedera services via natural language | ALL (HTS, HCS, HSCS, Mirror Node, SaucerSwap, Bonzo, Memejob) | Yes |
+| Blueprint | Category | Description | Hedera Services | Testnet? | LLM Key? |
+|-----------|----------|-------------|-----------------|----------|----------|
+| **Meme Coin Launchpad** | A | One-click meme token launch with bonding curve, community topic, and wallet verification | HTS (Memejob), HCS, Account Query | ✅ Full | No |
+| **Hedera DeFi Agent** | B | Voice/text DeFi assistant — AI agent with Hedera tools | HTS, HCS, Account, Memejob | ✅ Full | Yes |
 
 These are starting points. The skill can build any Hedera-powered frontend — custom apps are supported by combining patterns from the [references](references/).
 
@@ -107,12 +107,25 @@ agent-kit-app-builder/
 
 - **Next.js 14+** (App Router) with TypeScript
 - **Tailwind CSS** + **shadcn/ui** for production-quality UI
-- **`@hiero-ledger/sdk`** (formerly `@hashgraph/sdk`) for direct Hedera SDK access
+- **`@hashgraph/sdk`** for direct Hedera SDK access (hedera-agent-kit and all plugins import from this package internally)
 - **`hedera-agent-kit`** for multi-step operations, plugins, and MCP server
-- **Third-party plugins:** SaucerSwap (DEX), Bonzo (lending), Memejob (meme tokens)
-- **LangChain** (Category B only) for AI agent framework
+- **Third-party plugins:** Memejob (meme tokens, ✅ testnet), SaucerSwap (DEX, mainnet only), Bonzo (lending, requires setup)
+- **LangGraph** (`@langchain/langgraph`) + **LangChain Core** (Category B only) for AI agent framework
 - **Mirror Node REST API** for read-heavy dashboard queries
 - **Web Speech API** (Category B only) for voice input
+
+## Plugin Testnet Compatibility
+
+Not all third-party plugins work on testnet out of the box:
+
+| Plugin | Testnet | Notes |
+|--------|---------|-------|
+| Core plugins (account, token, consensus, EVM, query) | ✅ Full | All work on testnet |
+| Memejob | ✅ Full | Token creation, buying, selling |
+| SaucerSwap | ⚠️ Mainnet only | Defaults to mainnet API (`api.saucerswap.finance`), returns 401 on testnet |
+| Bonzo | ⚠️ Requires setup | Needs `bonzo-contracts.json` config file with deployed contract addresses |
+
+Both demos use only testnet-compatible plugins by default. SaucerSwap and Bonzo can be added for mainnet-targeting apps.
 
 ## Limitations & Scope
 
@@ -139,11 +152,29 @@ turbopack: { root: path.resolve(__dirname) }
 **`toast` import errors**
 The shadcn `toast` component is deprecated. Use `sonner` instead — simpler API: `toast("message")`. Install with `npx shadcn@latest add sonner --yes`.
 
-**Wrong SDK package name**
-Use `@hiero-ledger/sdk`, not `@hashgraph/sdk`. The package was renamed as part of the Hiero transition.
+**`instanceof` mismatch / "Failed to initialize NativeAdapter"**
+Use `@hashgraph/sdk`, not `@hiero-ledger/sdk`. While the SDK was renamed to `@hiero-ledger/sdk`, hedera-agent-kit and all third-party plugins (SaucerSwap, Bonzo, Memejob) still import from `@hashgraph/sdk` internally. Mixing the two packages causes `instanceof Client` checks to fail at runtime. Both packages export the same API.
 
 **"No LLM API key found" error (Category B only)**
 Set exactly one of `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GROQ_API_KEY` in `.env.local`. The app auto-detects which provider to use. For free/fast demos, use Groq.
+
+**`langchain/agents` import error / "Package subpath './agents' is not defined"**
+The old `createToolCallingAgent` + `AgentExecutor` imports from `langchain/agents` are removed in langchain v1.x. Use `createReactAgent` from `@langchain/langgraph/prebuilt` instead. Install `@langchain/langgraph` and `@langchain/core` — the `langchain` main package is NOT needed.
+
+**Groq 413 error / "Request too large" (Category B)**
+Loading all plugins generates ~38 tools (~34k tokens of schema). Groq free tier has a 12k TPM limit. Solution: load only the plugins your app needs (≤10 tools), or upgrade to Groq Dev Tier, or use OpenAI/Anthropic.
+
+**Groq `model` property error / "'model' is missing"**
+Use `model` not `modelName` when creating LLM instances: `new ChatGroq({ model: 'llama-3.3-70b-versatile' })`.
+
+**SaucerSwap 401 error on testnet**
+The SaucerSwap plugin defaults to the mainnet API. It returns 401 on testnet. Only include `saucerswapPlugin` in apps targeting mainnet.
+
+**Bonzo "ENOENT bonzo-contracts.json" error**
+The Bonzo plugin requires a `bonzo-contracts.json` config file with deployed contract addresses. It doesn't work plug-and-play on testnet.
+
+**Memejob "Token memo is required" error**
+The `memo` field in `create_memejob_token_tool` cannot be an empty string. Provide a description or IPFS metadata path.
 
 **Agent not calling tools correctly (Category B)**
 Make sure you installed the correct LangChain provider package (`@langchain/openai`, `@langchain/anthropic`, or `@langchain/groq`). Different LLMs have varying tool-calling quality — GPT-4o and Claude Sonnet are most reliable.
