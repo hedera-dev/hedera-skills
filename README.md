@@ -1,6 +1,6 @@
 # Hedera Skills
 
-A marketplace of plugins and skills for AI coding agents working with the Hedera network. Each plugin contains packaged instructions, references, and examples that extend agent capabilities for Hedera development.
+A marketplace of plugins and skills for AI coding agents. Includes Hedera-specific development tools and general-purpose dev workflow intelligence. Each plugin contains packaged instructions, references, and examples that extend agent capabilities.
 
 ## Installation
 
@@ -14,6 +14,7 @@ A marketplace of plugins and skills for AI coding agents working with the Hedera
 /plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
 /plugin marketplace add hedera-dev/hedera-skills hts-system-contract
 /plugin marketplace add hedera-dev/hedera-skills hackathon-helper
+/plugin marketplace add hedera-dev/hedera-skills dev-intelligence
 ```
 
 ### Other Agents (npx skills)
@@ -112,6 +113,35 @@ Two skills for Hedera hackathon participants: project planning and submission va
 - Success (20%) - Hedera account growth, TPS impact, audience exposure
 - Pitch (10%) - Problem/solution clarity, metrics, Hedera representation
 
+### dev-intelligence
+
+AI development workflow toolkit — session continuity, quality gates, project scaffolding, and tech debt tracking for any codebase. Works with any language or framework.
+
+**Skills included:**
+
+- **session-management** — Report registry (15 categories), tech debt tracker (P0-P3 priorities), archive strategy for keeping session state lean across conversations.
+- **quality-gates** — PostToolUse auto-validation hooks for TypeScript, Python, Rust, and Go. Deploy checklists and local CI pipeline patterns.
+- **project-scaffolding** — Generate CLAUDE.md and `.claude/` directory structure for any project. Auto-detects stack, naming conventions, and build commands.
+
+**Commands included:**
+
+- `/continue` — Resume work with full context (git log, registry, tech debt)
+- `/init` — Scaffold a project for AI development (interactive setup)
+- `/debt` — View and manage tech debt tracker
+- `/health` — Run project health check (git, tests, lint, dependencies)
+
+**Use when:**
+
+- Starting a new project and want AI-ready scaffolding
+- Resuming work and need to pick up where you left off
+- Want automatic validation after every file edit
+- Tracking tech debt across sessions
+- Running pre-deploy or pre-push quality checks
+
+**Hooks included:**
+
+- PostToolUse (Edit/Write) — Auto-runs stack-appropriate linter/type-checker after every edit
+
 ## Marketplace Structure
 
 ```
@@ -133,11 +163,25 @@ hedera-skills/
 │   │       └── validate-submission/
 │   │           ├── SKILL.md
 │   │           └── references/
-│   └── hts-system-contract/  # HTS smart contract reference
-│       └── skills/
-│           └── hts-system-contract/
-│               ├── SKILL.md
-│               └── references/
+│   ├── hts-system-contract/  # HTS smart contract reference
+│   │   └── skills/
+│   │       └── hts-system-contract/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   └── dev-intelligence/     # Dev workflow intelligence
+│       ├── skills/
+│       │   ├── session-management/
+│       │   │   ├── SKILL.md
+│       │   │   └── references/
+│       │   ├── quality-gates/
+│       │   │   ├── SKILL.md
+│       │   │   └── references/
+│       │   └── project-scaffolding/
+│       │       ├── SKILL.md
+│       │       └── references/
+│       ├── commands/
+│       ├── hooks/
+│       └── scripts/
 └── README.md
 ```
 

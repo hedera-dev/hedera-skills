@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hedera-skills",
-  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, HTS system contracts, and hackathon tooling",
+  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, HTS system contracts, hackathon tooling, and dev workflow intelligence",
   "owner": {
     "name": "Hedera Dev",
     "url": "https://hedera.com"
@@ -39,6 +39,17 @@
       "source": "./plugins/hackathon-helper",
       "category": "workflow",
       "keywords": ["hedera", "hackathon", "prd", "validation", "judging-criteria"]
+    },
+    {
+      "name": "dev-intelligence",
+      "description": "AI development workflow toolkit — session continuity, quality gates, project scaffolding, and tech debt tracking for any codebase",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/dev-intelligence",
+      "category": "workflow",
+      "keywords": ["dev-workflow", "session-management", "quality-gates", "scaffolding", "tech-debt", "claude-code", "ai-agents"]
     }
   ]
 }
