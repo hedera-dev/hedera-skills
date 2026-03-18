@@ -171,7 +171,7 @@ Based on detected stack, wire up the PostToolUse hook:
 
 **Important:** The command must be exactly `bash .claude/scripts/post-edit-check.sh` — do not add arguments like `$CLAUDE_TOOL_INPUT_FILE_PATH`. The script reads `$CLAUDE_TOOL_INPUT` from the environment automatically.
 
-2. Ensure the validation script matches the detected stack
+2. Do NOT modify the script — it already handles all stacks (TypeScript, Python, Rust, Go) via file extension detection. Copy it verbatim.
 
 ## Interactive Flow
 
