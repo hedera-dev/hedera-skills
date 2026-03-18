@@ -7,7 +7,11 @@ AI development workflow toolkit — session continuity, quality gates, project s
 ### Claude Code
 
 ```bash
-/plugin marketplace add hedera-dev/hedera-skills dev-intelligence
+# Step 1: Add the Hedera marketplace (skip if already added)
+/plugin marketplace add hedera-dev/hedera-skills
+
+# Step 2: Install the plugin
+/plugin install dev-intelligence
 ```
 
 ### Other Agents (npx skills)

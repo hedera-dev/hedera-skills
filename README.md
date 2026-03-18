@@ -11,10 +11,10 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin marketplace add hedera-dev/hedera-skills
 
 # Install individual plugins
-/plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
-/plugin marketplace add hedera-dev/hedera-skills hts-system-contract
-/plugin marketplace add hedera-dev/hedera-skills hackathon-helper
-/plugin marketplace add hedera-dev/hedera-skills dev-intelligence
+/plugin install agent-kit-plugin
+/plugin install hts-system-contract
+/plugin install hackathon-helper
+/plugin install dev-intelligence
 ```
 
 ### Other Agents (npx skills)
