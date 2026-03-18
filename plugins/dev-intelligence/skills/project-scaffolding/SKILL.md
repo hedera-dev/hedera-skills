@@ -137,7 +137,11 @@ Create the following structure:
 1. Create all 15 category directories under `.claude/reports/`
 2. Copy `registry-template.md` content to `.claude/reports/_registry.md` (empty, ready to use)
 3. Copy `tech-debt-template.md` content to `.claude/reports/_tech-debt.md` (empty, ready to use)
-4. Copy `post-edit-check.sh` to `.claude/scripts/` and make executable
+4. Copy `post-edit-check.sh` to `.claude/scripts/` using `cp` via Bash (NOT the Write tool — Write can corrupt line endings and break the script):
+   ```bash
+   mkdir -p .claude/scripts && cp "$CLAUDE_PLUGIN_DIR/scripts/post-edit-check.sh" .claude/scripts/post-edit-check.sh && chmod +x .claude/scripts/post-edit-check.sh
+   ```
+   If `$CLAUDE_PLUGIN_DIR` is unavailable, locate the plugin via `find ~/.claude -name "post-edit-check.sh" | head -1` and cp from there.
 5. Create `.claude/commands/parallel.md` with project-specific file ownership boundaries
 6. Seed MEMORY.md at the auto-memory path (see MEMORY.md Seeding section above)
 

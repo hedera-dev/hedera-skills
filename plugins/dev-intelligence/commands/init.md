@@ -31,8 +31,9 @@ Set up this project for AI-assisted development with session tracking, quality g
    - Create `.claude/reports/` with all 15 category directories
    - Create `.claude/reports/_registry.md` (empty registry)
    - Create `.claude/reports/_tech-debt.md` (empty tracker)
-   - Create `.claude/scripts/post-edit-check.sh` (validation script)
-   - Make scripts executable
+   - Copy `post-edit-check.sh` using Bash `cp` (NOT the Write tool — it corrupts line endings):
+     `find ~/.claude -name "post-edit-check.sh" -path "*/dev-intelligence/*" | head -1 | xargs -I{} cp {} .claude/scripts/post-edit-check.sh`
+   - Make executable: `chmod +x .claude/scripts/post-edit-check.sh`
 
 6. **Set up hooks:**
    - Create `.claude/settings.json` with PostToolUse hook
