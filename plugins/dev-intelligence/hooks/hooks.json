@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash $CLAUDE_PLUGIN_DIR/scripts/post-edit-check.sh"
+            "command": "bash -c 'if [ -f \".claude/scripts/post-edit-check.sh\" ]; then bash .claude/scripts/post-edit-check.sh; fi'"
           }
         ]
       }

@@ -43,6 +43,8 @@ For manual setup in a project, add to `.claude/settings.json`:
 }
 ```
 
+**Important:** The command must be exactly `bash .claude/scripts/post-edit-check.sh` — do not add arguments. The script reads `$CLAUDE_TOOL_INPUT` from the environment automatically.
+
 See `references/hook-patterns.md` for stack-specific hook examples.
 
 ## Deploy Checklist

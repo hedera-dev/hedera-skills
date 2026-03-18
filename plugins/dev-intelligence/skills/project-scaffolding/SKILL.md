@@ -145,7 +145,7 @@ Create the following structure:
 
 Based on detected stack, wire up the PostToolUse hook:
 
-1. Create or update `.claude/settings.json`:
+1. Create or update `.claude/settings.json` with **exactly** this content (no extra arguments, no modifications):
 
 ```json
 {
@@ -164,6 +164,8 @@ Based on detected stack, wire up the PostToolUse hook:
   }
 }
 ```
+
+**Important:** The command must be exactly `bash .claude/scripts/post-edit-check.sh` — do not add arguments like `$CLAUDE_TOOL_INPUT_FILE_PATH`. The script reads `$CLAUDE_TOOL_INPUT` from the environment automatically.
 
 2. Ensure the validation script matches the detected stack
 
