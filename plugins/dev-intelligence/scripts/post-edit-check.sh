@@ -10,7 +10,7 @@ set -euo pipefail
 FILE=""
 if [ -n "${CLAUDE_TOOL_INPUT:-}" ]; then
   # Try to extract file_path from JSON (Edit/Write tools use file_path)
-  FILE=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+  FILE=$(echo "$CLAUDE_TOOL_INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || true)
 fi
 
 # If we couldn't extract a file path, exit silently

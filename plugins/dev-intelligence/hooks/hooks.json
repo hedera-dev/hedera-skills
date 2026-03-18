@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if [ -f \".claude/scripts/post-edit-check.sh\" ]; then bash .claude/scripts/post-edit-check.sh; fi'"
+            "command": "bash -c 'script=$(find ~/.claude -name \"post-edit-check.sh\" -path \"*/dev-intelligence/*\" 2>/dev/null | head -1); [ -n \"$script\" ] && bash \"$script\"'"
           }
         ]
       }

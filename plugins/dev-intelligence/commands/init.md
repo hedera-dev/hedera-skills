@@ -27,17 +27,21 @@ Set up this project for AI-assisted development with session tracking, quality g
    - Add user-provided conventions
    - Place at project root
 
-5. **Create .claude/ directory structure:**
-   - Create `.claude/reports/` with all 15 category directories
+5. **Create .claude/ directory structure using Write tool** (NOT Bash for file creation — Bash writes don't survive session interrupts):
    - Create `.claude/reports/_registry.md` (empty registry)
    - Create `.claude/reports/_tech-debt.md` (empty tracker)
-   - Copy `post-edit-check.sh` using Bash `cp` (NOT the Write tool — it corrupts line endings):
-     `find ~/.claude -name "post-edit-check.sh" -path "*/dev-intelligence/*" | head -1 | xargs -I{} cp {} .claude/scripts/post-edit-check.sh`
-   - Make executable: `chmod +x .claude/scripts/post-edit-check.sh`
+   - Create `.gitkeep` files in each of the 15 report category dirs using Write tool
+   - Copy `post-edit-check.sh` with this exact Bash sequence (cp preserves LF endings; Write tool corrupts them with CRLF):
+     ```bash
+     mkdir -p .claude/scripts && \
+     find ~/.claude -name "post-edit-check.sh" -path "*/dev-intelligence/*" 2>/dev/null | head -1 | xargs -I{} cp {} .claude/scripts/post-edit-check.sh && \
+     sed -i '' 's/\r//' .claude/scripts/post-edit-check.sh && \
+     chmod +x .claude/scripts/post-edit-check.sh
+     ```
 
 6. **Set up hooks:**
-   - Create `.claude/settings.json` with PostToolUse hook
-   - Wire up the auto-validation script
+   - Create `.claude/settings.json` with PostToolUse hook using Write tool
+   - Command must be exactly: `bash .claude/scripts/post-edit-check.sh`
 
 7. **Seed MEMORY.md:**
    - Determine the MEMORY.md path for Claude Code's auto-memory:
