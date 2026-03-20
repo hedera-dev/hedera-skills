@@ -13,6 +13,7 @@ A marketplace of plugins and skills for AI coding agents working with the Hedera
 # Install individual plugins
 /plugin marketplace add hedera-dev/hedera-skills agent-kit-plugin
 /plugin marketplace add hedera-dev/hedera-skills hts-system-contract
+/plugin marketplace add hedera-dev/hedera-skills schedule-system-contract
 /plugin marketplace add hedera-dev/hedera-skills hackathon-helper
 ```
 
@@ -86,6 +87,30 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
 
+### schedule-system-contract
+
+Technical reference for the Hedera Schedule Service (HSS) system contract at `0x16b` - scheduling transactions from Solidity (native HTS token creation, generalized contract calls).
+
+**Use when:**
+
+- Scheduling token creation or other HTS operations via `scheduleNative`
+- Scheduling arbitrary contract calls with `scheduleCall` (HIP-1215)
+- Signing schedules from contracts with `authorizeSchedule` or `signSchedule`
+- Managing schedule capacity and throttling with `hasScheduleCapacity`
+- Deleting or querying scheduled transactions
+
+**Topics covered:**
+
+- HIP-755: Authorize and sign schedules from contracts
+- HIP-756: Schedule native HTS token creation
+- HIP-1215: Generalized scheduled contract calls (DeFi automation, vesting, DAOs)
+- Non-reverting behavior and response code handling
+- Capacity checks and retry patterns
+
+**References included:**
+
+- `api.md` - Full HSS API reference (function signatures, selectors, HIP mapping)
+
 ### hackathon-helper
 
 Two skills for Hedera hackathon participants: project planning and submission validation, both aligned to the official judging criteria. Compatible with any AI coding agent that supports skills (Claude Code, Codex, Gemini CLI, etc.).
@@ -133,9 +158,14 @@ hedera-skills/
 │   │       └── validate-submission/
 │   │           ├── SKILL.md
 │   │           └── references/
-│   └── hts-system-contract/  # HTS smart contract reference
+│   ├── hts-system-contract/  # HTS smart contract reference
+│   │   └── skills/
+│   │       └── hts-system-contract/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   └── schedule-system-contract/  # HSS schedule service reference
 │       └── skills/
-│           └── hts-system-contract/
+│           └── schedule-system-contract/
 │               ├── SKILL.md
 │               └── references/
 └── README.md
