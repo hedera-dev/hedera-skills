@@ -1,0 +1,131 @@
+{
+  "skill_name": "hedera-consensus-service",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a topic with a submit key, subscribe to it via mirror node, and then publish 5 JSON event messages. Write the full Node.js script using @hiero-ledger/sdk.",
+      "expected_output": "A complete Node.js script that creates a topic, subscribes via TopicMessageQuery, and publishes structured JSON messages.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-correct-import",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Imports from the correct package"
+        },
+        {
+          "name": "creates-topic",
+          "type": "contains",
+          "value": "TopicCreateTransaction",
+          "description": "Uses TopicCreateTransaction"
+        },
+        {
+          "name": "sets-submit-key",
+          "type": "contains",
+          "value": "setSubmitKey",
+          "description": "Sets a submit key on the topic"
+        },
+        {
+          "name": "subscribes-to-messages",
+          "type": "contains",
+          "value": "TopicMessageQuery",
+          "description": "Uses TopicMessageQuery for subscription"
+        },
+        {
+          "name": "uses-subscribe-method",
+          "type": "regex",
+          "value": "\\.subscribe\\(",
+          "description": "Calls .subscribe() (not .execute()) on the query"
+        },
+        {
+          "name": "submits-messages",
+          "type": "contains",
+          "value": "TopicMessageSubmitTransaction",
+          "description": "Uses TopicMessageSubmitTransaction to publish"
+        },
+        {
+          "name": "signs-with-submit-key",
+          "type": "regex",
+          "value": "(\\.sign\\(|\\.freezeWith)",
+          "description": "Freezes and signs with submit key since topic has one"
+        },
+        {
+          "name": "uses-json-messages",
+          "type": "contains",
+          "value": "JSON.stringify",
+          "description": "Sends structured JSON messages"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I need to submit a large message (~5KB) to an HCS topic and make sure all chunks go through. Show me how to use executeAll and verify each chunk's receipt.",
+      "expected_output": "A script demonstrating chunked message submission with executeAll and receipt verification per chunk.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-execute-all",
+          "type": "contains",
+          "value": "executeAll",
+          "description": "Uses executeAll() to get all chunk responses"
+        },
+        {
+          "name": "creates-large-message",
+          "type": "regex",
+          "value": "(repeat|Buffer\\.alloc|new Array|length.*[45]\\d{3})",
+          "description": "Creates a message around 5KB"
+        },
+        {
+          "name": "verifies-receipts",
+          "type": "contains",
+          "value": "getReceipt",
+          "description": "Gets receipt for each chunk"
+        },
+        {
+          "name": "mentions-sequence-number",
+          "type": "contains",
+          "value": "topicSequenceNumber",
+          "description": "Checks or logs the sequence number from receipts"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write a script that creates a topic with a 1 Hbar custom fee per message, then submits a message as a different account (not the operator) with a custom fee limit set.",
+      "expected_output": "A script showing topic creation with custom fees and message submission with fee limits from a non-operator account.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-custom-fixed-fee",
+          "type": "contains",
+          "value": "CustomFixedFee",
+          "description": "Uses CustomFixedFee for the per-message fee"
+        },
+        {
+          "name": "sets-fee-schedule-key",
+          "type": "contains",
+          "value": "setFeeScheduleKey",
+          "description": "Sets fee schedule key on the topic"
+        },
+        {
+          "name": "uses-custom-fee-limit",
+          "type": "contains",
+          "value": "CustomFeeLimit",
+          "description": "Uses CustomFeeLimit when submitting"
+        },
+        {
+          "name": "creates-separate-account",
+          "type": "contains",
+          "value": "AccountCreateTransaction",
+          "description": "Creates a separate account to submit from"
+        },
+        {
+          "name": "switches-operator",
+          "type": "contains",
+          "value": "setOperator",
+          "description": "Switches client operator to the new account"
+        }
+      ]
+    }
+  ]
+}

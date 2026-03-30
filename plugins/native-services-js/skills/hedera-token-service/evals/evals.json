@@ -1,0 +1,131 @@
+{
+  "skill_name": "hedera-token-service",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to create a fungible token with 8 decimals called 'GameGold' with symbol 'GG', mint 1 million initial supply to my operator account, then transfer 500 tokens to another account. Write the full JS script using @hiero-ledger/sdk.",
+      "expected_output": "A complete, runnable Node.js script that creates a fungible token, handles account creation/association, and transfers tokens using the Hiero SDK.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-correct-import",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Imports from the correct package"
+        },
+        {
+          "name": "creates-fungible-token",
+          "type": "contains",
+          "value": "TokenCreateTransaction",
+          "description": "Uses TokenCreateTransaction to create the token"
+        },
+        {
+          "name": "sets-decimals-8",
+          "type": "regex",
+          "value": "setDecimals\\(8\\)",
+          "description": "Sets decimals to 8 as requested"
+        },
+        {
+          "name": "handles-association",
+          "type": "contains",
+          "value": "TokenAssociateTransaction",
+          "description": "Associates recipient account with token before transfer"
+        },
+        {
+          "name": "uses-transfer-transaction",
+          "type": "contains",
+          "value": "TransferTransaction",
+          "description": "Uses TransferTransaction for the token transfer"
+        },
+        {
+          "name": "signed-amounts-correct",
+          "type": "regex",
+          "value": "addTokenTransfer.*-",
+          "description": "Uses negative amount for sender in token transfer"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Write a script that creates an NFT collection with a 5% royalty fee, mints 3 NFTs with IPFS metadata URIs, and then transfers one of them to another account. Use the Hiero SDK.",
+      "expected_output": "A complete script demonstrating NFT creation with royalty fees, minting with metadata, and NFT transfer.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-nonfungible-type",
+          "type": "contains",
+          "value": "NonFungibleUnique",
+          "description": "Sets token type to NonFungibleUnique"
+        },
+        {
+          "name": "creates-royalty-fee",
+          "type": "contains",
+          "value": "CustomRoyaltyFee",
+          "description": "Uses CustomRoyaltyFee for the 5% royalty"
+        },
+        {
+          "name": "mints-with-metadata",
+          "type": "contains",
+          "value": "addMetadata",
+          "description": "Mints NFTs with metadata"
+        },
+        {
+          "name": "uses-nft-transfer",
+          "type": "contains",
+          "value": "addNftTransfer",
+          "description": "Uses addNftTransfer for NFT transfer"
+        },
+        {
+          "name": "sets-supply-key",
+          "type": "regex",
+          "value": "setSupplyKey",
+          "description": "Sets supply key (required for minting)"
+        },
+        {
+          "name": "correct-royalty-fraction",
+          "type": "regex",
+          "value": "setNumerator\\(5\\)",
+          "description": "Sets 5% royalty numerator"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want to airdrop a fungible token to 3 accounts — one has unlimited auto-association, one has 1 slot, and one has 0. Show me how to handle the pending airdrops (claim and cancel). JavaScript please.",
+      "expected_output": "A script showing the full airdrop lifecycle including pending airdrop handling with claim and cancel.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-airdrop-transaction",
+          "type": "contains",
+          "value": "TokenAirdropTransaction",
+          "description": "Uses TokenAirdropTransaction"
+        },
+        {
+          "name": "uses-claim",
+          "type": "contains",
+          "value": "TokenClaimAirdropTransaction",
+          "description": "Demonstrates claiming pending airdrops"
+        },
+        {
+          "name": "uses-cancel",
+          "type": "contains",
+          "value": "TokenCancelAirdropTransaction",
+          "description": "Demonstrates cancelling pending airdrops"
+        },
+        {
+          "name": "creates-varied-accounts",
+          "type": "contains",
+          "value": "setMaxAutomaticTokenAssociations",
+          "description": "Creates accounts with different auto-association settings"
+        },
+        {
+          "name": "accesses-pending-airdrops",
+          "type": "contains",
+          "value": "newPendingAirdrops",
+          "description": "Accesses pending airdrops from the record"
+        }
+      ]
+    }
+  ]
+}
