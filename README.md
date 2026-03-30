@@ -12,7 +12,8 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 
 # Install individual plugins
 /plugin install agent-kit-plugin
-/plugin install hts-system-contract
+/plugin install system-contracts
+/plugin install native-services-js
 /plugin install hackathon-helper
 /plugin install dev-intelligence
 ```
@@ -56,28 +57,25 @@ Comprehensive guide for creating custom plugins that extend the Hedera Agent Kit
 - `prompt-patterns.md` - Effective tool description writing
 - `error-handling.md` - Error handling and output parsing patterns
 
-### hts-system-contract
+### system-contracts
 
-Technical reference for the Hedera Token Service (HTS) system contract - the core smart contract API for token operations on Hedera.
+Technical references for Hedera system contracts — the precompiled smart contract APIs for interacting with Hedera native services from Solidity.
+
+**Skills included:**
+
+- **hts-system-contract** — Hedera Token Service system contract (`0x167`). Token creation (fungible and NFT), minting, burning, transfers, association model, key system, fees, and compliance features.
+- **hss-system-contract** — Hedera Schedule Service system contract (`0x16b`). Scheduling native HTS token creation, generalized scheduled contract calls, and schedule signing from contracts (HIP-755, HIP-756, HIP-1215).
 
 **Use when:**
 
-- Writing Solidity contracts that interact with HTS
+- Writing Solidity contracts that interact with HTS or HSS
 - Creating or managing tokens via smart contracts
+- Scheduling transactions from within contracts
 - Understanding HTS response codes and error handling
 - Configuring token keys and permissions
 - Working with token fees and compliance features
 
-**Topics covered:**
-
-- Token creation functions (fungible and NFT)
-- Minting, burning, and transfer operations
-- HederaToken and TokenKey struct definitions
-- Response codes with causes and solutions
-- Key value types and KeyHelper patterns
-- Fee structures and compliance features
-
-**References included:**
+**References included (HTS):**
 
 - `api.md` - HTS contract API reference (Solidity signatures)
 - `structs.md` - Data structure definitions (HederaToken, TokenKey, Expiry)
@@ -86,6 +84,36 @@ Technical reference for the Hedera Token Service (HTS) system contract - the cor
 - `fees.md` - Fee structure information
 - `compliance.md` - Compliance-related features
 - `troubleshooting.md` - Common issues and solutions
+
+**References included (HSS):**
+
+- `api.md` - HSS contract API reference (Solidity signatures)
+
+### native-services-js
+
+Comprehensive guides for using Hedera native services with the Hiero JavaScript SDK. Covers setup patterns, transaction lifecycles, and common operations with working code examples.
+
+**Skills included:**
+
+- **hedera-token-service** — Token creation (fungible and NFT), minting, burning, transfers, key roles, compliance operations (KYC, freeze, wipe, pause), airdrops, and custom fees using the Hiero JS SDK.
+- **hedera-consensus-service** — Topic creation, message submission with chunking support, subscription patterns via mirror nodes, topic management, and common patterns (event logs, pub/sub).
+
+**Use when:**
+
+- Building JavaScript/TypeScript apps that interact with Hedera Token Service
+- Creating, minting, or transferring tokens using the Hiero JS SDK
+- Working with Hedera Consensus Service topics and messages
+- Setting up custom fees, compliance operations, or airdrops
+- Subscribing to topic messages via mirror nodes
+
+**References included (HTS):**
+
+- `api-reference.md` - Hiero JS SDK API reference for HTS
+- `custom-fees.md` - Custom fee configuration (fixed, fractional, royalty)
+
+**References included (HCS):**
+
+- `api-reference.md` - Hiero JS SDK API reference for HCS
 
 ### hackathon-helper
 
@@ -163,9 +191,20 @@ hedera-skills/
 │   │       └── validate-submission/
 │   │           ├── SKILL.md
 │   │           └── references/
-│   ├── hts-system-contract/  # HTS smart contract reference
+│   ├── system-contracts/     # Hedera system contract references
 │   │   └── skills/
-│   │       └── hts-system-contract/
+│   │       ├── hts-system-contract/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── hss-system-contract/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   ├── native-services-js/   # Hedera native services (Hiero JS SDK)
+│   │   └── skills/
+│   │       ├── hedera-token-service/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── hedera-consensus-service/
 │   │           ├── SKILL.md
 │   │           └── references/
 │   └── dev-intelligence/     # Dev workflow intelligence
