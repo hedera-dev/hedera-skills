@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hedera-skills",
-  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, HTS system contracts, hackathon tooling, and dev workflow intelligence",
+  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, system contracts, native services (JS SDK), hackathon tooling, and dev workflow intelligence",
   "owner": {
     "name": "Hedera Dev",
     "url": "https://hedera.com"
@@ -19,15 +19,26 @@
       "keywords": ["hedera", "agent-kit", "plugin", "tools", "blockchain"]
     },
     {
-      "name": "hts-system-contract",
-      "description": "Technical reference for Hedera Token Service (HTS) system contract development in Solidity",
+      "name": "system-contracts",
+      "description": "Technical references for Hedera system contracts (HTS and HSS) — Solidity APIs for token operations and scheduled transactions",
       "version": "1.0.0",
       "author": {
         "name": "Hedera Dev"
       },
-      "source": "./plugins/hts-system-contract",
+      "source": "./plugins/system-contracts",
       "category": "development",
-      "keywords": ["hedera", "hts", "tokens", "solidity", "smart-contracts"]
+      "keywords": ["hedera", "hts", "hss", "tokens", "solidity", "smart-contracts", "schedule-service"]
+    },
+    {
+      "name": "native-services-js",
+      "description": "Guides for Hedera Token Service and Consensus Service using the Hiero JavaScript SDK",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/native-services-js",
+      "category": "development",
+      "keywords": ["hedera", "hts", "hcs", "tokens", "consensus", "javascript", "hiero-sdk"]
     },
     {
       "name": "hackathon-helper",
