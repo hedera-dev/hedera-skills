@@ -30,28 +30,28 @@ when to reach for which product, not a substitute for the live tool definitions.
 
 ## Which product for what
 
-- **H-Index** (`h_index_*`): the capability registry. Discover agentic services (MCP
-  servers, x402-paid APIs, agent tools) with a safety scan, liveness, and trust tiers, and
-  register your own. Reads are free; register/renew are paid. See the `h-index-registry` skill.
+Each product has its own focused skill (linked below) for its when-to-use and client-side
+flow; this map routes you to the right one.
+
+- **H-Index** (`h_index_*`): the capability registry. Discover agentic services and register
+  your own, with a safety scan, liveness, and trust tiers. Skill: `h-index-registry`.
 - **H-Seal** (`h_seal_*`): proof-of-execution. Anchor, read, and verify tamper-proof,
-  optionally two-party receipts of what a service delivered. See the `h-seal-receipts` skill.
-- **H-Grant** (`h_grant_*`): scoped authorization. An owner publishes a signed grant
-  (a capability with limits); `h_grant_call` releases that capability on the owner's behalf
-  and can fold an H-Seal receipt of the call. Give an agent a bounded ability to act, not a key.
-- **H-Relay** (`h_relay_*`): agent transport. A mailbox (send/read/ack deliveries), a liveness
-  heartbeat, and a context proxy (`h_relay_relay`: verifiable agent egress, fetch context
-  through a proxy that records it). Routes against H-Index as its address book.
-- **H-Gate** (`h_gate_*`): data-egress control. `h_gate_inspect` checks text an agent is about
-  to send across a boundary and applies allow / redact / block (agentic DLP).
-- **H-Cert** (`h_cert_*`): principal directory + standing. Resolve a named principal and read
-  its advisory, signed behavior-standing verdict before trusting or delegating to it.
-- **H-Pact** (`h_pact_*`): membership rings. Create a ring, admit/evict members (owner-signed),
-  set policy, renew. A trusted-set registry, the twin of H-Index for membership.
-- **H-Scope** (`h_scope_*`): wallet posture. `h_scope_scan` scores an on-chain address for
-  behavioral signals and an entity-posture rating, a safety input before transacting.
+  optionally two-party receipts of what a service delivered. Skill: `h-seal-receipts`.
+- **H-Grant** (`h_grant_*`): scoped authorization. Give an agent a bounded, owner-signed
+  ability to act, not a key. Skill: `h-grant-authorization`.
+- **H-Relay** (`h_relay_*`): agent transport. Mailbox, liveness heartbeat, and a verifiable
+  context proxy. Routes against H-Index as its address book. Skill: `h-relay-transport`.
+- **H-Gate** (`h_gate_*`): data-egress control. Inspect an agent's outbound text and apply
+  allow / redact / block (agentic DLP). Skill: `h-gate-egress`.
+- **H-Cert** (`h_cert_*`): principal directory + standing. Check a principal's signed behavior
+  standing before trusting or delegating to it. Skill: `h-cert-standing`.
+- **H-Pact** (`h_pact_*`): membership rings. Owner-signed, on-chain trusted-set membership.
+  Skill: `h-pact-rings`.
+- **H-Scope** (`h_scope_*`): wallet posture. Score an address's behavioral risk before
+  transacting. Skill: `h-scope-posture`.
 - **H-Agent** (NOT in the MCP suite): agent runtime identity with an on-chain spend cap (an
-  MPC-held key that spends only within an owner-signed cap). Provisioned via its own endpoint
-  `https://h-agent.xr-utilities.ai` (OIDC-owner-bound), not the shared MCP tools.
+  MPC-held key spending only within an owner-signed cap). Its own scoped MCP at
+  `https://h-agent.xr-utilities.ai`. Skill: `h-agent-runtime`.
 
 ## Two things the tools rely on you to do
 
