@@ -72,6 +72,18 @@
       "source": "./plugins/hiero-cli",
       "category": "development",
       "keywords": ["hedera", "hiero", "hcli", "cli", "hbar", "token", "nft", "contract", "topic"]
+    },
+    {
+      "name": "h-series",
+      "description": "Discover and register agentic services (MCP servers, x402-paid APIs, agent tools) on H-Index, the capability registry for the agentic economy on Hedera, and anchor two-party proof-of-execution receipts via H-Seal with zero code. Community plugin by XR Utilities.",
+      "version": "0.1.0",
+      "author": {
+        "name": "XR Utilities",
+        "url": "https://xr-utilities.ai"
+      },
+      "source": "./plugins/h-series",
+      "category": "development",
+      "keywords": ["hedera", "hcs", "mcp", "x402", "agentic", "registry", "discovery", "proof-of-execution", "receipts", "agents"]
     }
   ]
 }
