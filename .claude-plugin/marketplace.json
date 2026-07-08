@@ -75,7 +75,7 @@
     },
     {
       "name": "h-series",
-      "description": "Discover and register agentic services (MCP servers, x402-paid APIs, agent tools) on H-Index, the capability registry for the agentic economy on Hedera, and anchor two-party proof-of-execution receipts via H-Seal with zero code. Community plugin by XR Utilities.",
+      "description": "Work with the whole H-Series suite on Hedera through one hosted MCP server: discover/register agentic services (H-Index), prove execution (H-Seal), scoped authorization (H-Grant), agent transport (H-Relay), egress control (H-Gate), standing (H-Cert), rings (H-Pact), and wallet posture (H-Scope). Community plugin by XR Utilities.",
       "version": "0.1.0",
       "author": {
         "name": "XR Utilities",
