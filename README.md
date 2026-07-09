@@ -19,6 +19,7 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin install hackathon-helper
 /plugin install hedera-harness
 /plugin install dev-intelligence
+/plugin install mirror-node
 ```
 
 ### Other Agents (npx skills)
@@ -253,6 +254,32 @@ AI development workflow toolkit — session continuity, quality gates, project s
 **Hooks included:**
 
 - PostToolUse (Edit/Write) — Auto-runs stack-appropriate linter/type-checker after every edit
+
+### mirror-node
+
+Read-only access to Hedera network state through the Mirror Node REST API (`GET /api/v1/...`) — the read counterpart to the SDK, CLI, and Agent Kit write skills. No key, signature, or fee required.
+
+**Skills included:**
+
+- **hedera-mirror-node** — Query account balances, transactions, tokens, NFTs, HCS topic messages, and contract results via the Mirror Node REST API. Covers base URLs per network, filtering/ordering operators, cursor pagination (`links.next`), the `context.mirrornodeService` path for Agent Kit query tools, and consistency/rate-limit gotchas.
+
+**Use when:**
+
+- Confirming a transaction, mint, or transfer landed
+- Looking up an account balance, token info, or NFT ownership
+- Paging through transaction or message history
+- Reading HCS topic messages or contract call results
+- Building a read-only Agent Kit query tool backed by the mirror node
+
+**References included:**
+
+- `endpoints.md` - Full endpoint catalog, response fields, and query parameters
+
+**Examples included:**
+
+- `query-account.mjs` - Balance + token/NFT lookups over raw REST (runnable, no deps)
+- `paginate.mjs` - Cursor pagination helper following `links.next`
+- `get-account-nfts-tool.ts` - Agent Kit query `BaseTool` preferring `context.mirrornodeService`
 
 ## Marketplace Structure
 

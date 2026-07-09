@@ -1,0 +1,150 @@
+{
+  "skill_name": "hedera-mirror-node",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a JavaScript function using native fetch that returns the HBAR balance (in whole HBAR) of a given Hedera account by querying the testnet mirror node. No SDK.",
+      "expected_output": "A function that GETs /api/v1/accounts/{id} from the testnet mirror node and converts the tinybar balance to HBAR.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-testnet-host",
+          "type": "contains",
+          "value": "testnet.mirrornode.hedera.com",
+          "description": "Targets the testnet mirror node host"
+        },
+        {
+          "name": "uses-accounts-endpoint",
+          "type": "regex",
+          "value": "/api/v1/accounts/",
+          "description": "Calls the /api/v1/accounts/{id} endpoint",
+          "rubric": "The output calls the mirror node accounts endpoint (/api/v1/accounts/{id}) to fetch the account"
+        },
+        {
+          "name": "uses-fetch",
+          "type": "contains",
+          "value": "fetch(",
+          "description": "Uses native fetch, no SDK"
+        },
+        {
+          "name": "converts-tinybars",
+          "type": "regex",
+          "value": "100000000|1e8|1_000_000_00|100_000_000",
+          "description": "Divides tinybars by 100,000,000 to get HBAR",
+          "rubric": "The output converts the tinybar balance to HBAR by dividing by 100,000,000 (accept 1e8 or an equivalent constant)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Show me how to page through ALL transactions for account 0.0.1234 from the Hedera mirror node when there are more than 100. JavaScript.",
+      "expected_output": "Code that follows the links.next cursor until null, accumulating transactions across pages.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-transactions-endpoint",
+          "type": "regex",
+          "value": "/api/v1/transactions",
+          "description": "Queries the transactions endpoint",
+          "rubric": "The output queries the mirror node transactions endpoint"
+        },
+        {
+          "name": "follows-links-next",
+          "type": "regex",
+          "value": "links\\??\\.?\\[?['\"]?next",
+          "description": "Follows the links.next cursor for pagination",
+          "rubric": "The output paginates by following the response's links.next field until it is null"
+        },
+        {
+          "name": "loops-until-null",
+          "type": "regex",
+          "value": "while\\s*\\(",
+          "description": "Loops over pages rather than a single request",
+          "rubric": "The output loops across multiple pages instead of a single request (a while/for loop over the cursor)"
+        },
+        {
+          "name": "uses-account-filter",
+          "type": "contains",
+          "value": "account.id=0.0.1234",
+          "description": "Filters transactions by account.id"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I just submitted a token transfer on Hedera and want to confirm it succeeded by looking it up on the mirror node. My transaction ID is 0.0.1234@1700000000.000000000. How do I query it, and what do I watch out for?",
+      "expected_output": "Guidance to convert the transaction ID to the dashed mirror-node form, hit /transactions/{id}, check result === SUCCESS, and account for mirror-node lag with a retry.",
+      "files": [],
+      "checks": [
+        {
+          "name": "converts-tx-id-format",
+          "type": "contains",
+          "value": "0.0.1234-1700000000-000000000",
+          "description": "Converts the @/. transaction ID into the dashed mirror-node path form",
+          "rubric": "The output converts the SDK transaction ID (0.0.1234@1700000000.000000000) into the dashed mirror-node path form (0.0.1234-1700000000-000000000)"
+        },
+        {
+          "name": "uses-transactions-endpoint",
+          "type": "regex",
+          "value": "/api/v1/transactions/",
+          "description": "Queries /transactions/{id}",
+          "rubric": "The output looks the transaction up via /api/v1/transactions/{id}"
+        },
+        {
+          "name": "checks-result",
+          "type": "regex",
+          "value": "SUCCESS|result",
+          "description": "Checks the transaction result field",
+          "rubric": "The output checks the transaction's result field (e.g. equals SUCCESS)"
+        },
+        {
+          "name": "mentions-consistency-lag",
+          "type": "regex",
+          "value": "lag|delay|retry|eventual|few seconds|404",
+          "description": "Warns about mirror-node consistency lag / retrying",
+          "rubric": "The output warns that mirror nodes lag consensus and advises retrying/polling rather than trusting an immediate 404"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write a query tool for the Hedera Agent Kit (a read-only BaseTool) that lists the NFTs an account owns via the mirror node. Prefer the kit's configured mirror node service and fall back to REST correctly for mainnet.",
+      "expected_output": "A BaseTool query subclass that prefers context.mirrornodeService, uses shouldSecondaryAction()===false, and maps mainnet to the mainnet-public host in its fetch fallback.",
+      "files": [],
+      "checks": [
+        {
+          "name": "extends-basetool",
+          "type": "contains",
+          "value": "extends BaseTool",
+          "description": "Implements the tool as a BaseTool subclass"
+        },
+        {
+          "name": "skips-secondary-action",
+          "type": "regex",
+          "value": "shouldSecondaryAction",
+          "description": "Overrides shouldSecondaryAction to skip stage 6 for a query",
+          "rubric": "The output overrides shouldSecondaryAction to return false so the query skips the sign/submit stage"
+        },
+        {
+          "name": "prefers-mirrornode-service",
+          "type": "contains",
+          "value": "mirrornodeService",
+          "description": "Prefers context.mirrornodeService"
+        },
+        {
+          "name": "correct-mainnet-host",
+          "type": "contains",
+          "value": "mainnet-public.mirrornode.hedera.com",
+          "description": "Uses the correct mainnet-public host in the REST fallback"
+        },
+        {
+          "name": "uses-account-nfts-endpoint",
+          "type": "regex",
+          "value": "/accounts/.*/nfts",
+          "description": "Calls the account NFTs endpoint",
+          "rubric": "The output queries the account NFTs endpoint (/accounts/{id}/nfts)"
+        }
+      ]
+    }
+  ]
+}
