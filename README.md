@@ -66,6 +66,7 @@ Technical references for Hedera system contracts — the precompiled smart contr
 
 - **hts-system-contract** — Hedera Token Service system contract (`0x167`). Token creation (fungible and NFT), minting, burning, transfers, association model, key system, fees, and compliance features.
 - **hss-system-contract** — Hedera Schedule Service system contract (`0x16b`). Scheduling native HTS token creation, generalized scheduled contract calls, and schedule signing from contracts (HIP-755, HIP-756, HIP-1215).
+- **hedera-oracle-adapters** — Provider-agnostic price oracle adapters on Hedera (Chainlink, Supra, Pyth) behind a shared `IPriceOracle` interface with 18-decimal normalization.
 
 **Use when:**
 
@@ -75,6 +76,8 @@ Technical references for Hedera system contracts — the precompiled smart contr
 - Understanding HTS response codes and error handling
 - Configuring token keys and permissions
 - Working with token fees and compliance features
+- Integrating Chainlink, Supra, or Pyth price feeds on Hedera
+- Building `IPriceOracle` adapters or consumers that convert with `priceE18`
 
 **References included (HTS):**
 
@@ -89,6 +92,11 @@ Technical references for Hedera system contracts — the precompiled smart contr
 **References included (HSS):**
 
 - `api.md` - HSS contract API reference (Solidity signatures)
+
+**References included (oracle adapters):**
+
+- `examples.md` - Condensed Chainlink / Supra / Pyth adapter and consumer skeletons
+- `hedera-feeds.md` - Hedera testnet/mainnet feed addresses, Supra pair IDs, Pyth price IDs
 
 ### native-services-js
 
@@ -216,7 +224,10 @@ hedera-skills/
 │   │       ├── hts-system-contract/
 │   │       │   ├── SKILL.md
 │   │       │   └── references/
-│   │       └── hss-system-contract/
+│   │       ├── hss-system-contract/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── hedera-oracle-adapters/
 │   │           ├── SKILL.md
 │   │           └── references/
 │   ├── native-services-js/   # Hedera native services (Hiero JS SDK)
