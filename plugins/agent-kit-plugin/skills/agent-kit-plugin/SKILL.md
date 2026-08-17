@@ -1,5 +1,5 @@
 ---
-name: Hedera Plugin Creation
+name: agent-kit-plugin
 description: This skill should be used when the user asks to "create a hedera plugin", "build a hedera agent kit plugin", "extend hedera agent kit", "create custom hedera tools", "add hedera functionality", "write a hedera tool", "implement hedera tool", or needs guidance on Hedera Agent Kit plugin architecture, tool definitions, mutation tools, query tools, or parameter schemas using Zod.
 version: 2.0.0
 ---

@@ -7,54 +7,14 @@
       "expected_output": "A complete Node.js script that creates a topic, subscribes via TopicMessageQuery, and publishes structured JSON messages.",
       "files": [],
       "assertions": [
-        {
-          "name": "uses-correct-import",
-          "type": "contains",
-          "value": "@hiero-ledger/sdk",
-          "description": "Imports from the correct package"
-        },
-        {
-          "name": "creates-topic",
-          "type": "contains",
-          "value": "TopicCreateTransaction",
-          "description": "Uses TopicCreateTransaction"
-        },
-        {
-          "name": "sets-submit-key",
-          "type": "contains",
-          "value": "setSubmitKey",
-          "description": "Sets a submit key on the topic"
-        },
-        {
-          "name": "subscribes-to-messages",
-          "type": "contains",
-          "value": "TopicMessageQuery",
-          "description": "Uses TopicMessageQuery for subscription"
-        },
-        {
-          "name": "uses-subscribe-method",
-          "type": "regex",
-          "value": "\\.subscribe\\(",
-          "description": "Calls .subscribe() (not .execute()) on the query"
-        },
-        {
-          "name": "submits-messages",
-          "type": "contains",
-          "value": "TopicMessageSubmitTransaction",
-          "description": "Uses TopicMessageSubmitTransaction to publish"
-        },
-        {
-          "name": "signs-with-submit-key",
-          "type": "regex",
-          "value": "(\\.sign\\(|\\.freezeWith)",
-          "description": "Freezes and signs with submit key since topic has one"
-        },
-        {
-          "name": "uses-json-messages",
-          "type": "contains",
-          "value": "JSON.stringify",
-          "description": "Sends structured JSON messages"
-        }
+        "The output imports from @hiero-ledger/sdk",
+        "The output uses TopicCreateTransaction",
+        "The output sets a submit key on the topic",
+        "The output uses TopicMessageQuery for subscription",
+        "The output calls .subscribe() on the query (not .execute()) for live message subscription",
+        "The output uses TopicMessageSubmitTransaction to publish",
+        "The output freezes and/or signs submit transactions when the topic has a submit key",
+        "The output sends structured JSON messages"
       ]
     },
     {
@@ -63,30 +23,10 @@
       "expected_output": "A script demonstrating chunked message submission with executeAll and receipt verification per chunk.",
       "files": [],
       "assertions": [
-        {
-          "name": "uses-execute-all",
-          "type": "contains",
-          "value": "executeAll",
-          "description": "Uses executeAll() to get all chunk responses"
-        },
-        {
-          "name": "creates-large-message",
-          "type": "regex",
-          "value": "(repeat|Buffer\\.alloc|new Array|length.*[45]\\d{3})",
-          "description": "Creates a message around 5KB"
-        },
-        {
-          "name": "verifies-receipts",
-          "type": "contains",
-          "value": "getReceipt",
-          "description": "Gets receipt for each chunk"
-        },
-        {
-          "name": "mentions-sequence-number",
-          "type": "contains",
-          "value": "topicSequenceNumber",
-          "description": "Checks or logs the sequence number from receipts"
-        }
+        "The output uses executeAll() to get all chunk responses",
+        "The output creates a large message around 5KB (for example using repeat, Buffer.alloc, or similar)",
+        "The output verifies each chunk succeeded (for example getReceipt, checking response status from executeAll, or logging receipt/sequence number per chunk)",
+        "The output checks or logs the sequence number from receipts"
       ]
     },
     {
@@ -95,36 +35,11 @@
       "expected_output": "A script showing topic creation with custom fees and message submission with fee limits from a non-operator account.",
       "files": [],
       "assertions": [
-        {
-          "name": "uses-custom-fixed-fee",
-          "type": "contains",
-          "value": "CustomFixedFee",
-          "description": "Uses CustomFixedFee for the per-message fee"
-        },
-        {
-          "name": "sets-fee-schedule-key",
-          "type": "contains",
-          "value": "setFeeScheduleKey",
-          "description": "Sets fee schedule key on the topic"
-        },
-        {
-          "name": "uses-custom-fee-limit",
-          "type": "contains",
-          "value": "CustomFeeLimit",
-          "description": "Uses CustomFeeLimit when submitting"
-        },
-        {
-          "name": "creates-separate-account",
-          "type": "contains",
-          "value": "AccountCreateTransaction",
-          "description": "Creates a separate account to submit from"
-        },
-        {
-          "name": "switches-operator",
-          "type": "contains",
-          "value": "setOperator",
-          "description": "Switches client operator to the new account"
-        }
+        "The output uses CustomFixedFee for the per-message fee",
+        "The output sets fee schedule key on the topic",
+        "The output uses CustomFeeLimit when submitting",
+        "The output uses a separate submitting account (created with AccountCreateTransaction or clearly configured as a non-operator account)",
+        "The output submits from the new account (for example calling setOperator on the existing client, or creating a new Client configured with the second account's credentials)"
       ]
     }
   ]

@@ -1,0 +1,118 @@
+{
+  "skill_name": "hts-system-contract",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a Solidity contract that creates a fungible token with 8 decimals using the HTS system contract at 0x167. The contract must pay the required HBAR token-creation fee, not just gas.",
+      "expected_output": "A Solidity contract inheriting HederaTokenService that creates a fungible token with correct HBAR value payment and HederaResponseCodes checks.",
+      "files": [],
+      "checks": [
+        {
+          "name": "inherits-hts",
+          "type": "contains",
+          "value": "HederaTokenService",
+          "description": "Inherits from or uses HederaTokenService"
+        },
+        {
+          "name": "uses-create-fungible",
+          "type": "contains",
+          "value": "createFungibleToken",
+          "description": "Uses createFungibleToken to create the token"
+        },
+        {
+          "name": "pays-hbar-value",
+          "type": "regex",
+          "value": "createFungibleToken\\{value:",
+          "description": "Pays HBAR token creation fee via {value: ...} on createFungibleToken",
+          "rubric": "The output pays the HTS token creation fee by passing HBAR value into createFungibleToken (for example createFungibleToken{value: msg.value}(...))"
+        },
+        {
+          "name": "checks-response-code",
+          "type": "contains",
+          "value": "HederaResponseCodes",
+          "description": "Checks HederaResponseCodes for success"
+        },
+        {
+          "name": "sets-decimals",
+          "type": "contains",
+          "value": "8",
+          "description": "Sets 8 decimals for the fungible token",
+          "rubric": "The output sets token decimals to 8 in the createFungibleToken call or token configuration"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Write a Solidity contract that creates a finite-supply NFT collection via HTS, sets a contract-controlled supply key, and includes a mintNFT function that mints metadata.",
+      "expected_output": "A contract that creates an NFT with supply key and mints using mintToken with metadata.",
+      "files": [],
+      "checks": [
+        {
+          "name": "creates-nft",
+          "type": "contains",
+          "value": "createNonFungibleToken",
+          "description": "Uses createNonFungibleToken for the NFT collection"
+        },
+        {
+          "name": "sets-supply-key",
+          "type": "contains",
+          "value": "KeyType.SUPPLY",
+          "description": "Configures a supply key for minting",
+          "rubric": "The output configures a supply key (for example KeyType.SUPPLY or getSingleKey with SUPPLY) so the contract can mint"
+        },
+        {
+          "name": "finite-supply",
+          "type": "contains",
+          "value": "maxSupply",
+          "description": "Sets a finite max supply for the NFT collection"
+        },
+        {
+          "name": "mints-with-metadata",
+          "type": "contains",
+          "value": "mintToken",
+          "description": "Uses mintToken to mint NFT metadata"
+        },
+        {
+          "name": "pays-hbar-value",
+          "type": "regex",
+          "value": "createNonFungibleToken\\{value:",
+          "description": "Pays HBAR token creation fee on NFT create",
+          "rubric": "The output pays the HTS token creation fee by passing HBAR value into createNonFungibleToken"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write a Solidity contract function that associates a recipient account with a token before transferring it, handling TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT gracefully.",
+      "expected_output": "A function using associateToken and checking HederaResponseCodes.SUCCESS or TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT before transfer.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-associate",
+          "type": "contains",
+          "value": "associateToken",
+          "description": "Uses associateToken before transfer"
+        },
+        {
+          "name": "handles-already-associated",
+          "type": "contains",
+          "value": "TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT",
+          "description": "Handles TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT response code"
+        },
+        {
+          "name": "checks-response-codes",
+          "type": "contains",
+          "value": "HederaResponseCodes",
+          "description": "Uses HederaResponseCodes for association checks"
+        },
+        {
+          "name": "transfers-token",
+          "type": "contains",
+          "value": "transferToken",
+          "description": "Transfers the token after association",
+          "rubric": "The output transfers the token after association (for example transferToken, transferTokens, transferNFT, or cryptoTransfer)"
+        }
+      ]
+    }
+  ]
+}

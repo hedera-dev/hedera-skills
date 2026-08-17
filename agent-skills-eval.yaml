@@ -1,0 +1,45 @@
+# Standard config for running Hedera Skills evals locally and in CI.
+# Requires OPENAI_API_KEY (OpenRouter key). OPENAI_BASE_URL in .env is optional
+# when baseUrl is set here; CLI --base-url overrides this file.
+#
+# Run all skills that have evals/evals.json:
+#   set -a && source .env && set +a
+#   npx agent-skills-eval --config agent-skills-eval.yaml
+#
+# Run a subset while tuning (CLI flags override config).
+# Include globs match skill relPath under root (no trailing /** — paths end at the skill dir):
+#   npx agent-skills-eval --config agent-skills-eval.yaml \
+#     --include "**/hts-system-contract" \
+#     --include "**/hss-system-contract" \
+#     --include "**/hiero-cli" \
+#     --include "**/agent-kit-plugin"
+
+root: ./plugins
+workspace: ./agent-skills-workspace
+baseline: true
+
+# Cheap target for generation; stronger judge for assertion grading.
+target: deepseek/deepseek-v4-flash
+judge: anthropic/claude-sonnet-4
+
+baseUrl: https://openrouter.ai/api/v1
+apiKeyEnv: OPENAI_API_KEY
+
+concurrency: 4
+layout: iteration
+strict: true
+
+report:
+  enabled: true
+  title: Hedera Skills Evaluation Report
+
+logging:
+  format: pretty
+  verbose: false
+  color: auto
+
+targetParams:
+  temperature: 0
+
+judgeParams:
+  temperature: 0

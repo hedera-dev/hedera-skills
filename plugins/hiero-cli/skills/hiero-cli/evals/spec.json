@@ -1,0 +1,114 @@
+{
+  "skill_name": "hiero-cli",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to create a fungible token called MyToken with symbol MTK, 2 decimals, and initial supply 1,000,000 on testnet. Give me the exact hcli commands using JSON output.",
+      "expected_output": "hcli token create-ft command with correct flags and --format json.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-create-ft",
+          "type": "contains",
+          "value": "hcli token create-ft",
+          "description": "Uses hcli token create-ft"
+        },
+        {
+          "name": "sets-token-name",
+          "type": "contains",
+          "value": "--token-name",
+          "description": "Sets the token name flag"
+        },
+        {
+          "name": "sets-symbol",
+          "type": "contains",
+          "value": "--symbol",
+          "description": "Sets the token symbol flag"
+        },
+        {
+          "name": "sets-decimals",
+          "type": "contains",
+          "value": "--decimals",
+          "description": "Sets the decimals flag"
+        },
+        {
+          "name": "uses-json-format",
+          "type": "contains",
+          "value": "--format json",
+          "description": "Uses JSON output format as requested",
+          "rubric": "The output specifies JSON output format (for example --format json or --format=json)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Before I run any write commands on testnet, what hcli commands should I run to configure the network and operator?",
+      "expected_output": "Prerequisite commands: hcli network use testnet and hcli network set-operator with account and key.",
+      "files": [],
+      "checks": [
+        {
+          "name": "sets-network",
+          "type": "contains",
+          "value": "hcli network use",
+          "description": "Switches to the requested network"
+        },
+        {
+          "name": "uses-testnet",
+          "type": "contains",
+          "value": "testnet",
+          "description": "Targets testnet"
+        },
+        {
+          "name": "sets-operator",
+          "type": "contains",
+          "value": "hcli network set-operator",
+          "description": "Configures the operator account and key"
+        },
+        {
+          "name": "includes-operator-flag",
+          "type": "contains",
+          "value": "--operator",
+          "description": "Uses the --operator flag for set-operator"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create an HCS topic named audit-log and submit the message 'deployment complete' using hcli. Show the commands.",
+      "expected_output": "hcli topic create followed by hcli topic submit-message with topic reference and message flag.",
+      "files": [],
+      "checks": [
+        {
+          "name": "creates-topic",
+          "type": "contains",
+          "value": "hcli topic create",
+          "description": "Uses hcli topic create"
+        },
+        {
+          "name": "names-topic",
+          "type": "contains",
+          "value": "--name",
+          "description": "Assigns a local topic name with --name"
+        },
+        {
+          "name": "submits-message",
+          "type": "contains",
+          "value": "hcli topic submit-message",
+          "description": "Uses hcli topic submit-message"
+        },
+        {
+          "name": "passes-message-flag",
+          "type": "contains",
+          "value": "--message",
+          "description": "Passes the message content with --message"
+        },
+        {
+          "name": "references-topic",
+          "type": "contains",
+          "value": "--topic",
+          "description": "References the topic with --topic"
+        }
+      ]
+    }
+  ]
+}

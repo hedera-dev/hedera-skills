@@ -2,3 +2,6 @@
 /.agents/
 /.idea/
 /skills-lock.json
+.env
+agent-skills-workspace*/
+node_modules/

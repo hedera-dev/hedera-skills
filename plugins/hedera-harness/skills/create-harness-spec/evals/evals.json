@@ -1,0 +1,78 @@
+{
+  "skill_name": "create-harness-spec",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I already scaffolded a Scaffold HBAR app (packages/nextjs present, yarn workspaces). Help me create a Tier 0-1 hedera-harness recipe under .harness/ for an HCS proof-wall feature called proof-wall: users browse a public message wall without a wallet, and posting requires connecting a wallet. No Solidity.",
+      "expected_output": "A grilling session that asks one question at a time with a recommended answer, looks up project facts instead of asking, waits for shared understanding before writing files, then emits a minimal schemaVersion 2 recipe at .harness/spec.yaml with a baseline install command, plus .harness/prd.md and validators, leaving v2 defaults commented out.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Follows grilling protocol: one question at a time / recommended answer",
+        "The output satisfies: Does not write files until shared understanding is confirmed",
+        "The output includes schemaVersion: 2: Recipe declares schemaVersion 2",
+        "The output includes .harness/spec.yaml: Writes the recipe to the project-centric .harness/ path",
+        "The output satisfies: Baseline includes a command literally named install",
+        "The output satisfies: Leaves v2-defaulted plumbing out of the recipe rather than restating it",
+        "The output satisfies: Does not emit keys removed in schema v2 (seed, generator, logging, extend)",
+        "The output includes hedera-consensus-service: Recommends generator skill hedera-consensus-service for HCS",
+        "The output satisfies: Keeps the run blind / separates PRD from oracle",
+        "The output satisfies: States that authoring skills stay out of the generator skills list",
+        "The output satisfies: Names doctor and/or check-spec.sh as the completion criterion"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Deepen my existing proof-wall harness recipe to Tier 3. Derive acceptance contract assertions from the PRD journeys (browse without wallet; wallet-gated post).",
+      "expected_output": "An acceptance contract at .harness/acceptance-contract.json with numbered assertions carrying statement and howToVerify, a fail-closed evaluationRules posture, both contract and validator.enabled set in the recipe, and a reminder that the PRD must stay blind.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Uses stable numbered assertion ids (C1, C2, ...)",
+        "The output includes howToVerify: Assertions carry concrete browser verification steps",
+        "The output satisfies: Enables both contract and validator.enabled — either alone is misconfigured",
+        "The output uses the v2 default acceptance contract path",
+        "The output satisfies: Acceptance contract keeps a fail-closed posture",
+        "The output satisfies: Reminds the user not to leak oracle detail into the PRD",
+        "The output satisfies: Does not hand-write validator CLI flags or model names; the agent preset owns those"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "When should I enable chainValidation for my harness recipe, and what YAML fields do I need?",
+      "expected_output": "Explains that Tier 3.5 is opt-in and requires Tier 3, that network must be testnet, that an ECDSA operator is supplied through environment variables, and that assertions must be flagged executableWithTestSigner to actually transact.",
+      "files": [],
+      "assertions": [
+        "The output includes chainValidation: Names the chainValidation block",
+        "The output satisfies: States the network must be testnet",
+        "The output satisfies: Operator credentials come from environment variables",
+        "The output satisfies: Calls out that the operator must be ECDSA, not ED25519",
+        "The output includes executableWithTestSigner: Links chainValidation to executableWithTestSigner assertions",
+        "The output satisfies: States that Tier 3.5 depends on Tier 3"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My .harness/spec.yaml has an extend.baseline block and no schemaVersion. I want to add a new page to the recipe — can you edit it for me?",
+      "expected_output": "Recognizes a v1 recipe, declines to hand-edit it into v2, and recommends running hedera-harness migrate first, then authoring against the migrated v2 result.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Identifies the recipe as predating schema v2",
+        "The output includes hedera-harness migrate: Recommends the migrate command",
+        "The output satisfies: Declines to hand-convert v1 to v2",
+        "The output satisfies: Explains that extend.baseline becomes baseline"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want the harness to build a whole HTS subscription feature: the token service layer, a management UI, and wallet-gated mint flows. Should that be one PRD or several?",
+      "expected_output": "Weighs a single PRD against ordered increments, recommends splitting only because this spans layers, explains that prd accepts a list delivered in order onto one branch, and that each increment must leave the app green because baseline and Tier 0-1 run per increment and the first failure stops the sequence.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Explains that prd can be an ordered list of increments",
+        "The output satisfies: Each increment must leave the app green on its own",
+        "The output satisfies: A failing increment stops the sequence",
+        "The output satisfies: Orders increments by dependency, not size",
+        "The output satisfies: Increments deliver onto a single branch"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "skill_name": "agent-kit-plugin",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a Hedera Agent Kit mutation tool class that transfers HBAR between accounts. Include the Zod parameter schema and BaseTool lifecycle methods.",
+      "expected_output": "A TypeScript tool class extending BaseTool with z.object parameters, normalizeParams, coreAction, and secondaryAction.",
+      "files": [],
+      "checks": [
+        {
+          "name": "extends-base-tool",
+          "type": "contains",
+          "value": "extends BaseTool",
+          "description": "Extends BaseTool for hooks/policies lifecycle"
+        },
+        {
+          "name": "uses-zod-schema",
+          "type": "contains",
+          "value": "z.object",
+          "description": "Defines parameters with a Zod object schema"
+        },
+        {
+          "name": "defines-method-suffix",
+          "type": "regex",
+          "value": "_tool",
+          "description": "Uses snake_case method name ending in _tool",
+          "rubric": "The output defines a tool method identifier in snake_case ending with _tool"
+        },
+        {
+          "name": "implements-normalize",
+          "type": "contains",
+          "value": "normalizeParams",
+          "description": "Implements normalizeParams lifecycle stage"
+        },
+        {
+          "name": "implements-core-action",
+          "type": "contains",
+          "value": "coreAction",
+          "description": "Implements coreAction lifecycle stage"
+        },
+        {
+          "name": "implements-secondary-action",
+          "type": "contains",
+          "value": "secondaryAction",
+          "description": "Implements secondaryAction for mutation submit flow"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Show me the plugin index.ts structure for a custom Hedera Agent Kit plugin with one query tool that reads token info from the mirror node.",
+      "expected_output": "A Plugin export with name, tools factory returning BaseTool instances, and shouldSecondaryAction disabled for the query tool.",
+      "files": [],
+      "checks": [
+        {
+          "name": "exports-plugin-interface",
+          "type": "contains",
+          "value": "Plugin",
+          "description": "Exports a Plugin interface object"
+        },
+        {
+          "name": "tools-factory",
+          "type": "contains",
+          "value": "tools:",
+          "description": "Defines a tools factory on the plugin"
+        },
+        {
+          "name": "imports-agent-kit",
+          "type": "contains",
+          "value": "@hashgraph/hedera-agent-kit",
+          "description": "Imports from @hashgraph/hedera-agent-kit"
+        },
+        {
+          "name": "query-tool-pattern",
+          "type": "contains",
+          "value": "shouldSecondaryAction",
+          "description": "Uses shouldSecondaryAction for a read-only query tool",
+          "rubric": "The output shows a query tool pattern that skips secondaryAction (for example shouldSecondaryAction returning false)"
+        },
+        {
+          "name": "exports-tool-names",
+          "type": "contains",
+          "value": "ToolNames",
+          "description": "Exports tool name constants for registration",
+          "rubric": "The output exports tool name constants (for example a ToolNames map or UPPER_SNAKE_CASE constant)"
+        }
+      ]
+    }
+  ]
+}

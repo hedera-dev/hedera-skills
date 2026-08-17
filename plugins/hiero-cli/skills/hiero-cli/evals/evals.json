@@ -1,0 +1,43 @@
+{
+  "skill_name": "hiero-cli",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to create a fungible token called MyToken with symbol MTK, 2 decimals, and initial supply 1,000,000 on testnet. Give me the exact hcli commands using JSON output.",
+      "expected_output": "hcli token create-ft command with correct flags and --format json.",
+      "files": [],
+      "assertions": [
+        "The output uses hcli token create-ft",
+        "The output sets the token name flag",
+        "The output sets the token symbol flag",
+        "The output sets the decimals flag",
+        "The output specifies JSON output format (for example --format json or --format=json)"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Before I run any write commands on testnet, what hcli commands should I run to configure the network and operator?",
+      "expected_output": "Prerequisite commands: hcli network use testnet and hcli network set-operator with account and key.",
+      "files": [],
+      "assertions": [
+        "The output switches to the requested network",
+        "The output includes testnet: Targets testnet",
+        "The output includes hcli network set-operator: Configures the operator account and key",
+        "The output uses the --operator flag for set-operator"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Create an HCS topic named audit-log and submit the message 'deployment complete' using hcli. Show the commands.",
+      "expected_output": "hcli topic create followed by hcli topic submit-message with topic reference and message flag.",
+      "files": [],
+      "assertions": [
+        "The output uses hcli topic create",
+        "The output includes --name: Assigns a local topic name with --name",
+        "The output uses hcli topic submit-message",
+        "The output includes --message: Passes the message content with --message",
+        "The output includes --topic: References the topic with --topic"
+      ]
+    }
+  ]
+}

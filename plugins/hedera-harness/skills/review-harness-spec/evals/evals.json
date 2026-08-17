@@ -1,0 +1,67 @@
+{
+  "skill_name": "review-harness-spec",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Review this harness recipe. .harness/spec.yaml is schemaVersion 2 with name: proof-wall and sets contract: .harness/acceptance-contract.json but has no validator block. The command validator has a command named setup instead of install, and .harness/prd.md contains a line saying 'C2 must pass: the feed renders'.",
+      "expected_output": "A two-axis report that keeps Wiring and Oracle separate, flags the Tier 3 pairing gap (contract without validator.enabled), the missing install command name, and the blind violation from the assertion id leaking into the PRD.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Report contains a Wiring axis",
+        "The output satisfies: Report contains an Oracle axis",
+        "The output satisfies: Flags contract present but validator.enabled missing",
+        "The output satisfies: Flags the command validator missing an install-named command",
+        "The output satisfies: Flags the assertion id leaking into the PRD",
+        "The output satisfies: Uses the mechanical checker for the Wiring axis"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Audit whether this harness recipe is safe to enable chainValidation. The recipe has contract + validator.enabled, chainValidation.enabled true, network: mainnet, and the Playwright smoke asserts twelve pieces of UI copy across six routes.",
+      "expected_output": "Flags mainnet as rejected by the loader, notes that the Playwright tier is too thick and deep UX belongs in the oracle, and covers both axes.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Report keeps both axes",
+        "The output satisfies: Flags network: mainnet as invalid",
+        "The output includes executableWithTestSigner: Ties chainValidation to executable assertions",
+        "The output satisfies: Flags an over-stuffed Playwright tier"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Check the skills: list on .harness/spec.yaml which includes hedera-consensus-service and create-harness-spec. Is that correct? Also the PRD has three journeys but the acceptance contract only has one assertion.",
+      "expected_output": "Rejects the authoring skill in the generator skills list while keeping the domain skill, and flags that two PRD journeys are ungraded.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Rejects the authoring skill in the generator list",
+        "The output includes hedera-consensus-service: Keeps the legitimate domain skill",
+        "The output satisfies: Flags journeys without oracle coverage",
+        "The output satisfies: Explains who the skills list is for"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this recipe: .harness/spec.yaml has no schemaVersion, an extend.baseline block, a generator block with cursor CLI args, and logging paths under .harness/runs/.",
+      "expected_output": "Identifies a v1 recipe, stops and recommends hedera-harness migrate before reviewing, and notes that generator, logging and extend were removed in v2 with the agent preset replacing hand-written CLI flags.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Identifies the recipe as pre-v2",
+        "The output includes hedera-harness migrate: Recommends migrating before review",
+        "The output satisfies: Names the keys removed in schema v2",
+        "The output satisfies: Explains that the agent preset replaces hand-written CLI flags"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this recipe: schemaVersion 2, baseline with install, and it also sets maxAttempts: 3, prd: .harness/prd.md, validators.static: .harness/validators/static.json, and constraints.packageManager: yarn@3.2.3 which matches the project lockfile. Anything wrong?",
+      "expected_output": "Confirms the recipe is valid and runnable, but notes it is padded: every one of those keys restates a v2 default or a detected value, adding drift surface for no benefit. Recommends removing them.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Recognizes the recipe is not broken",
+        "The output satisfies: Flags keys that merely restate v2 defaults",
+        "The output satisfies: Names which keys are defaulted or detected",
+        "The output satisfies: Recommends removing the redundant keys"
+      ]
+    }
+  ]
+}

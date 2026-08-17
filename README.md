@@ -13,8 +13,10 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 # Install individual plugins
 /plugin install agent-kit-plugin
 /plugin install system-contracts
+/plugin install cross-chain
 /plugin install native-services-js
 /plugin install hackathon-helper
+/plugin install hedera-harness
 /plugin install dev-intelligence
 ```
 
@@ -89,14 +91,41 @@ Technical references for Hedera system contracts — the precompiled smart contr
 
 - `api.md` - HSS contract API reference (Solidity signatures)
 
+### cross-chain
+
+Cross-chain interoperability patterns for Hedera — Axelar GMP and LayerZero V2 OFT bridges, with peer/gas wiring, allowlisting, and bridge-agnostic orchestration seams.
+
+**Skills included:**
+
+- **axelar-gmp** — Axelar Gateway `callContract`, gas service payment, `AxelarExecutable` receivers, Hedera↔EVM wiring, and `IBridgeSender` / handler split (as used by cross-chain DCA orchestration + HSS).
+- **layerzero-messaging** — LayerZero V2 OFT / OApp on Hedera: Endpoint peers, ULN/DVN/executor config, `quoteSend`/`send`, and HTS-backed connector OFTs (mint/burn via `0x167`).
+
+**Use when:**
+
+- Sending cross-chain contract calls from Hedera via Axelar GMP
+- Implementing `AxelarExecutable` receivers on EVM destinations
+- Wiring destination/source addresses after dual-chain deploys
+- Separating bridge transport from destination business logic
+- Combining HSS scheduled execution with Axelar message dispatch
+- Building Hedera↔EVM OFT bridges with LayerZero V2
+- Configuring `setPeer`, send/receive libraries, and enforced options
+- Implementing HTS connector OFTs (burn on send / mint on receive)
+
+**References included:**
+
+- `examples.md` - Sender, receiver, orchestrator, executor, OFT, and wire skeletons
+- `hedera-axelar.md` - Testnet gateway/gas addresses, Axelar chain names, env vars
+- `hedera-endpoints.md` - LayerZero EIDs, Endpoint V2, ULN, DVN, and executor addresses
+
 ### native-services-js
 
-Comprehensive guides for using Hedera native services with the Hiero JavaScript SDK. Covers setup patterns, transaction lifecycles, and common operations with working code examples.
+Comprehensive guides for using Hedera native services with the Hiero JavaScript SDK, plus x402 pay-per-use payment patterns on Hedera.
 
 **Skills included:**
 
 - **hedera-token-service** — Token creation (fungible and NFT), minting, burning, transfers, key roles, compliance operations (KYC, freeze, wipe, pause), airdrops, and custom fees using the Hiero JS SDK.
 - **hedera-consensus-service** — Topic creation, message submission with chunking support, subscription patterns via mirror nodes, topic management, and common patterns (event logs, pub/sub).
+- **x402-payments** — x402 HTTP 402 pay-per-use with native HBAR: FileRegistry metadata, self-hosted facilitator verify/settle, and HashPack client payment retries.
 
 **Use when:**
 
@@ -105,6 +134,8 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 - Working with Hedera Consensus Service topics and messages
 - Setting up custom fees, compliance operations, or airdrops
 - Subscribing to topic messages via mirror nodes
+- Gating downloads or APIs behind x402 HBAR payments on Hedera
+- Wiring a self-hosted x402 facilitator or ExactHederaScheme resource server
 
 **References included (HTS):**
 
@@ -114,6 +145,11 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 **References included (HCS):**
 
 - `api-reference.md` - Hiero JS SDK API reference for HCS
+
+**References included (x402):**
+
+- `examples.md` - FileRegistry, resource server, and client retry skeletons
+- `facilitator.md` - Facilitator endpoints, fee-payer env vars, Docker infra
 
 ### hackathon-helper
 
@@ -140,6 +176,25 @@ Two skills for Hedera hackathon participants: project planning and submission va
 - Validation (15%) - Market feedback, early adopters, traction
 - Success (20%) - Hedera account growth, TPS impact, audience exposure
 - Pitch (10%) - Problem/solution clarity, metrics, Hedera representation
+
+### hedera-harness
+
+Three skills for creating and reviewing [hedera-harness](https://github.com/hedera-dev/hedera-harness) specs — the PRD, spec file, validators, Playwright smoke, and acceptance contract (oracle) that drive Scaffold HBAR template generation. Compatible with any AI coding agent that supports skills.
+
+**Skills included:**
+
+- **harness-spec-anatomy** — Shared vocabulary (spec / slug / blind / oracle / gate / needle). Single source of truth for file layout and the mechanical `check-spec.sh` script.
+- **create-harness-spec** — Grills a product idea one question at a time, then emits a gate 0–1 spec (optional deeper gates). Prefers Matt Pocock `/grilling` when available.
+- **review-harness-spec** — Two-axis audit (Wiring via `check-spec.sh` + Oracle judgment) before a run.
+
+**Use when:**
+
+- Turning a Hedera demo idea into hedera-harness inputs
+- Writing a harness PRD, spec file, or acceptance contract
+- Reviewing a harness spec before `harness run`
+- Deciding which validation gates to enable and in what order
+
+**Important:** These are **authoring** skills. Do not list them in a template spec file's `skills:` field — that list is vendored into generator workspaces. Use existing index names (`hedera-consensus-service`, `hts-system-contract`, …) there instead.
 
 ### dev-intelligence
 
@@ -199,13 +254,39 @@ hedera-skills/
 │   │       └── hss-system-contract/
 │   │           ├── SKILL.md
 │   │           └── references/
-│   ├── native-services-js/   # Hedera native services (Hiero JS SDK)
+│   ├── cross-chain/          # Cross-chain interoperability (Axelar, LayerZero)
+│   │   └── skills/
+│   │       ├── axelar-gmp/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── layerzero-messaging/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   ├── native-services-js/   # Hedera native services + x402 payments
 │   │   └── skills/
 │   │       ├── hedera-token-service/
 │   │       │   ├── SKILL.md
 │   │       │   └── references/
-│   │       └── hedera-consensus-service/
+│   │       ├── hedera-consensus-service/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── x402-payments/
 │   │           ├── SKILL.md
+│   │           └── references/
+│   ├── hedera-harness/       # Harness spec authoring & review
+│   │   └── skills/
+│   │       ├── harness-spec-anatomy/
+│   │       │   ├── SKILL.md
+│   │       │   ├── GLOSSARY.md
+│   │       │   ├── scripts/
+│   │       │   └── references/
+│   │       ├── create-harness-spec/
+│   │       │   ├── SKILL.md
+│   │       │   ├── evals/
+│   │       │   └── references/
+│   │       └── review-harness-spec/
+│   │           ├── SKILL.md
+│   │           ├── evals/
 │   │           └── references/
 │   └── dev-intelligence/     # Dev workflow intelligence
 │       ├── skills/
@@ -229,6 +310,43 @@ Each plugin contains:
 - `skills/<name>/SKILL.md` - Instructions for the agent
 - `skills/<name>/references/` - Supporting documentation
 - `skills/<name>/examples/` - Working code examples (optional)
+- `skills/<name>/evals/spec.json` - Structured eval checks (source of truth)
+- `skills/<name>/evals/evals.json` - Generated assertions for `agent-skills-eval`
+
+## Skill Evaluations
+
+Skills with automated evals use a two-file layout:
+
+| File | Purpose |
+|------|---------|
+| `evals/spec.json` | Structured checks (`name`, `type`, `value`, `description`, optional `rubric`) — edit this |
+| `evals/evals.json` | Generated string assertions for [agent-skills-eval](https://github.com/darkrishabh/agent-skills-eval) — do not edit by hand |
+
+Compile before running evals:
+
+```bash
+npm run evals:compile
+```
+
+Verify generated files are up to date (for CI):
+
+```bash
+npm run evals:compile:check
+```
+
+Run evals for a skill (requires `OPENAI_API_KEY` and optional `OPENAI_BASE_URL` for OpenRouter):
+
+```bash
+set -a && source .env && set +a
+
+npx agent-skills-eval ./plugins/native-services-js/skills/hedera-token-service \
+  --target deepseek/deepseek-v4-flash \
+  --judge deepseek/deepseek-v4-flash \
+  --baseline \
+  --report
+```
+
+Add optional `rubric` on a check when the auto-generated judge text is too brittle (for example regex-based checks).
 
 ## License
 

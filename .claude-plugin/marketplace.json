@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "hedera-skills",
-  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, system contracts, native services (JS SDK), hackathon tooling, and dev workflow intelligence",
+  "description": "Official Hedera marketplace for AI coding agent plugins - Agent Kit development, system contracts, native services (JS SDK), hackathon tooling, harness authoring, and dev workflow intelligence",
   "owner": {
     "name": "Hedera Dev",
     "url": "https://hedera.com"
@@ -30,15 +30,26 @@
       "keywords": ["hedera", "hts", "hss", "tokens", "solidity", "smart-contracts", "schedule-service"]
     },
     {
+      "name": "cross-chain",
+      "description": "Cross-chain interoperability patterns for Hedera — Axelar GMP and LayerZero V2 OFT send/receive, gas/peer wiring, and bridge patterns to EVM destinations",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/cross-chain",
+      "category": "development",
+      "keywords": ["hedera", "axelar", "gmp", "layerzero", "oft", "oapp", "cross-chain", "bridge", "interop", "solidity"]
+    },
+    {
       "name": "native-services-js",
-      "description": "Guides for Hedera Token Service and Consensus Service using the Hiero JavaScript SDK",
+      "description": "Guides for Hedera Token Service, Consensus Service, and x402 pay-per-use HBAR payments using the Hiero JS SDK and @x402/hedera",
       "version": "1.0.0",
       "author": {
         "name": "Hedera Dev"
       },
       "source": "./plugins/native-services-js",
       "category": "development",
-      "keywords": ["hedera", "hts", "hcs", "tokens", "consensus", "javascript", "hiero-sdk"]
+      "keywords": ["hedera", "hts", "hcs", "tokens", "consensus", "javascript", "hiero-sdk", "x402", "payments"]
     },
     {
       "name": "hackathon-helper",
@@ -72,6 +83,28 @@
       "source": "./plugins/hiero-cli",
       "category": "development",
       "keywords": ["hedera", "hiero", "hcli", "cli", "hbar", "token", "nft", "contract", "topic"]
+    },
+    {
+      "name": "hedera-harness",
+      "description": "Create and review hedera-harness specs (PRD, spec file, validators, Playwright smoke, acceptance contract) for Scaffold HBAR template generation — includes shared anatomy vocabulary",
+      "version": "1.1.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/hedera-harness",
+      "category": "workflow",
+      "keywords": [
+        "hedera",
+        "harness",
+        "hedera-harness",
+        "benchmark",
+        "spec",
+        "prd",
+        "acceptance-contract",
+        "scaffold-hbar",
+        "validators",
+        "playwright"
+      ]
     },
     {
       "name": "h-series",

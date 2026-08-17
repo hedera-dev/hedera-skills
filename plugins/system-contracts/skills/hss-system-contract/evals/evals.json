@@ -1,0 +1,31 @@
+{
+  "skill_name": "hss-system-contract",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a Solidity contract that schedules native fungible token creation through the HSS system contract (HIP-756), calling the HTS precompile at 0x167 via scheduleNative.",
+      "expected_output": "A contract inheriting HederaScheduleService that schedules HTS token creation with scheduleNative and checks HederaResponseCodes.SUCCESS.",
+      "files": [],
+      "assertions": [
+        "The output includes HederaScheduleService: Inherits from HederaScheduleService",
+        "The output uses scheduleNative to schedule the HTS call",
+        "The output includes 0x167: Targets the HTS precompile at 0x167",
+        "The output includes createFungibleToken: Encodes a createFungibleToken call in the scheduled payload",
+        "The output checks HederaResponseCodes.SUCCESS after scheduling"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Write a Solidity contract that schedules an arbitrary future contract call using scheduleCall (HIP-1215). It must check hasScheduleCapacity first and handle the non-reverting failure pattern.",
+      "expected_output": "A HederaScheduleService contract that checks hasScheduleCapacity, calls scheduleCall, and reverts when rc is not SUCCESS or schedule address is zero.",
+      "files": [],
+      "assertions": [
+        "The output includes HederaScheduleService: Inherits from HederaScheduleService",
+        "The output checks hasScheduleCapacity before scheduling",
+        "The output uses scheduleCall for HIP-1215 generalized scheduling",
+        "The output checks the scheduleCall response code and rejects failure (for example rc != HederaResponseCodes.SUCCESS or scheduleAddr == address(0))",
+        "The output calls scheduleCall with target, expiry, gas limit, and encoded call data"
+      ]
+    }
+  ]
+}

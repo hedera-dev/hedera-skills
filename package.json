@@ -1,0 +1,11 @@
+{
+  "name": "hedera-skills",
+  "private": true,
+  "description": "Hedera Skills marketplace — plugins and skills for AI coding agents",
+  "scripts": {
+    "evals:compile": "node scripts/compile-evals.mjs",
+    "evals:compile:check": "node scripts/compile-evals.mjs --check",
+    "evals:run": "agent-skills-eval --config agent-skills-eval.yaml",
+    "evals:run:p1": "agent-skills-eval --config agent-skills-eval.yaml --include '**/hts-system-contract' --include '**/hss-system-contract' --include '**/hiero-cli' --include '**/agent-kit-plugin'"
+  }
+}

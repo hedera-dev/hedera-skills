@@ -1,0 +1,83 @@
+{
+  "skill_name": "hss-system-contract",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a Solidity contract that schedules native fungible token creation through the HSS system contract (HIP-756), calling the HTS precompile at 0x167 via scheduleNative.",
+      "expected_output": "A contract inheriting HederaScheduleService that schedules HTS token creation with scheduleNative and checks HederaResponseCodes.SUCCESS.",
+      "files": [],
+      "checks": [
+        {
+          "name": "inherits-hss",
+          "type": "contains",
+          "value": "HederaScheduleService",
+          "description": "Inherits from HederaScheduleService"
+        },
+        {
+          "name": "uses-schedule-native",
+          "type": "contains",
+          "value": "scheduleNative",
+          "description": "Uses scheduleNative to schedule the HTS call"
+        },
+        {
+          "name": "targets-hts-precompile",
+          "type": "contains",
+          "value": "0x167",
+          "description": "Targets the HTS precompile at 0x167"
+        },
+        {
+          "name": "encodes-token-create",
+          "type": "contains",
+          "value": "createFungibleToken",
+          "description": "Encodes a createFungibleToken call in the scheduled payload"
+        },
+        {
+          "name": "checks-response-code",
+          "type": "contains",
+          "value": "HederaResponseCodes.SUCCESS",
+          "description": "Checks HederaResponseCodes.SUCCESS after scheduling"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Write a Solidity contract that schedules an arbitrary future contract call using scheduleCall (HIP-1215). It must check hasScheduleCapacity first and handle the non-reverting failure pattern.",
+      "expected_output": "A HederaScheduleService contract that checks hasScheduleCapacity, calls scheduleCall, and reverts when rc is not SUCCESS or schedule address is zero.",
+      "files": [],
+      "checks": [
+        {
+          "name": "inherits-hss",
+          "type": "contains",
+          "value": "HederaScheduleService",
+          "description": "Inherits from HederaScheduleService"
+        },
+        {
+          "name": "checks-capacity",
+          "type": "contains",
+          "value": "hasScheduleCapacity",
+          "description": "Checks hasScheduleCapacity before scheduling"
+        },
+        {
+          "name": "uses-schedule-call",
+          "type": "contains",
+          "value": "scheduleCall",
+          "description": "Uses scheduleCall for HIP-1215 generalized scheduling"
+        },
+        {
+          "name": "handles-non-reverting-failure",
+          "type": "contains",
+          "value": "HederaResponseCodes.SUCCESS",
+          "description": "Checks response code because scheduleCall does not revert on failure",
+          "rubric": "The output checks the scheduleCall response code and rejects failure (for example rc != HederaResponseCodes.SUCCESS or scheduleAddr == address(0))"
+        },
+        {
+          "name": "uses-expiry-and-gas",
+          "type": "regex",
+          "value": "scheduleCall\\(",
+          "description": "Passes target, expiry, gas limit, and call data to scheduleCall",
+          "rubric": "The output calls scheduleCall with target, expiry, gas limit, and encoded call data"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "skill_name": "agent-kit-plugin",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create a Hedera Agent Kit mutation tool class that transfers HBAR between accounts. Include the Zod parameter schema and BaseTool lifecycle methods.",
+      "expected_output": "A TypeScript tool class extending BaseTool with z.object parameters, normalizeParams, coreAction, and secondaryAction.",
+      "files": [],
+      "assertions": [
+        "The output includes extends BaseTool: Extends BaseTool for hooks/policies lifecycle",
+        "The output includes z.object: Defines parameters with a Zod object schema",
+        "The output defines a tool method identifier in snake_case ending with _tool",
+        "The output includes normalizeParams: Implements normalizeParams lifecycle stage",
+        "The output includes coreAction: Implements coreAction lifecycle stage",
+        "The output includes secondaryAction: Implements secondaryAction for mutation submit flow"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Show me the plugin index.ts structure for a custom Hedera Agent Kit plugin with one query tool that reads token info from the mirror node.",
+      "expected_output": "A Plugin export with name, tools factory returning BaseTool instances, and shouldSecondaryAction disabled for the query tool.",
+      "files": [],
+      "assertions": [
+        "The output includes Plugin: Exports a Plugin interface object",
+        "The output includes tools:: Defines a tools factory on the plugin",
+        "The output imports from @hashgraph/hedera-agent-kit",
+        "The output shows a query tool pattern that skips secondaryAction (for example shouldSecondaryAction returning false)",
+        "The output exports tool name constants (for example a ToolNames map or UPPER_SNAKE_CASE constant)"
+      ]
+    }
+  ]
+}
