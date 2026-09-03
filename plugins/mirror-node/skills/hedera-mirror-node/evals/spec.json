@@ -1,0 +1,149 @@
+{
+  "skill_name": "hedera-mirror-node",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Using the Hedera testnet mirror node REST API and native fetch (no SDK), write a JavaScript function that returns the EXACT tinybar balance of account 0.0.2 as a BigInt. 0.0.2 is a treasury account holding well over 3e18 tinybars. It is important that the returned value is byte-exact with what the API sent — do not lose any precision.",
+      "expected_output": "Code that reads the response as text (or otherwise avoids JSON.parse coercing the balance to a Number) and converts the big integer to BigInt exactly, rather than calling res.json() and then BigInt() on an already-rounded Number.",
+      "files": [],
+      "checks": [
+        {
+          "name": "avoids-plain-json-parse-on-balance",
+          "type": "regex",
+          "value": "res\\.text\\(\\)|\\.text\\(\\)|replace\\(|json-bigint|context\\.source",
+          "description": "Avoids letting JSON.parse coerce the large balance to a Number",
+          "rubric": "The output avoids letting JSON.parse/res.json() coerce the large balance into a JS Number. It must read the payload as text (res.text()) and pre-process it (for example quoting long integer literals before JSON.parse), or use a big-integer-aware JSON parser, or use a Node 22+ JSON.parse reviver with context.source. Simply calling res.json() and then wrapping the result in BigInt() does NOT satisfy this check, because the precision is already lost by then."
+        },
+        {
+          "name": "explains-precision-loss",
+          "type": "regex",
+          "value": "MAX_SAFE_INTEGER|precision|rounded|2\\^53|9007199254740991",
+          "description": "Explains that the value exceeds Number.MAX_SAFE_INTEGER",
+          "rubric": "The output explains that the balance exceeds Number.MAX_SAFE_INTEGER (about 9.007e15) and that a JS Number therefore cannot represent it exactly"
+        },
+        {
+          "name": "returns-bigint",
+          "type": "contains",
+          "value": "BigInt",
+          "description": "Returns the value as a BigInt",
+          "rubric": "The output produces the balance as a BigInt (not a Number or a lossy float)"
+        },
+        {
+          "name": "uses-accounts-endpoint",
+          "type": "regex",
+          "value": "/api/v1/accounts/",
+          "description": "Queries the accounts endpoint",
+          "rubric": "The output queries the mirror node accounts endpoint (/api/v1/accounts/0.0.2) on testnet"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Using the Hedera mirror node REST API, write JavaScript that collects ALL transactions for account 0.0.1234 on testnet when there are several thousand of them. Explain how the pagination cursor works.",
+      "expected_output": "Code that loops following the response's links.next value, treating it as a relative path that already contains the cursor, until it is null.",
+      "files": [],
+      "checks": [
+        {
+          "name": "follows-links-next",
+          "type": "regex",
+          "value": "links[\\s\\S]{0,20}next",
+          "description": "Uses links.next as the pagination cursor",
+          "rubric": "The output paginates by following the response's links.next value, looping until links.next is null"
+        },
+        {
+          "name": "treats-next-as-relative-path",
+          "type": "regex",
+          "value": "host|origin|base|BASE|https://[a-z]+\\.mirrornode",
+          "description": "Concatenates links.next onto the host because it is a relative path",
+          "rubric": "The output recognizes that links.next is a RELATIVE path already containing the cursor query parameters, and concatenates it onto the host/origin rather than treating it as an absolute URL or rebuilding the query string by hand"
+        },
+        {
+          "name": "does-not-hand-roll-offsets",
+          "type": "regex",
+          "value": "links[\\s\\S]{0,20}next",
+          "description": "Does not invent its own offset/page parameters",
+          "rubric": "The output does NOT invent its own offset/page/skip parameters or manually increment a timestamp cursor; it relies on the links.next value the API returns"
+        },
+        {
+          "name": "accumulates-across-pages",
+          "type": "regex",
+          "value": "while|for\\s*\\(|do\\s*\\{",
+          "description": "Loops across pages accumulating results",
+          "rubric": "The output loops across multiple pages and accumulates the transactions, rather than issuing a single request"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I submitted a Hedera transaction and the SDK gave me the transaction ID 0.0.1234@1700000000.000000000. Immediately after getReceipt() I queried the mirror node for it and got a 404. Show me the correct mirror node URL to look this transaction up, and explain the 404.",
+      "expected_output": "Explains that the transaction ID must be converted to the dashed form 0.0.1234-1700000000-000000000 for the REST path, and that the 404 is mirror node ingestion lag requiring a retry/poll.",
+      "files": [],
+      "checks": [
+        {
+          "name": "dashed-transaction-id",
+          "type": "contains",
+          "value": "0.0.1234-1700000000-000000000",
+          "description": "Converts both the @ and the . into dashes",
+          "rubric": "The output converts the SDK transaction ID 0.0.1234@1700000000.000000000 into the mirror node path form 0.0.1234-1700000000-000000000, replacing BOTH the '@' separator AND the '.' between seconds and nanoseconds with dashes. Converting only the '@' (leaving 0.0.1234-1700000000.000000000) does NOT satisfy this check."
+        },
+        {
+          "name": "correct-endpoint",
+          "type": "regex",
+          "value": "/api/v1/transactions/",
+          "description": "Uses the /transactions/{id} endpoint",
+          "rubric": "The output uses the /api/v1/transactions/{transactionId} endpoint with the converted ID"
+        },
+        {
+          "name": "explains-lag-not-missing",
+          "type": "regex",
+          "value": "lag|delay|eventual|not yet|ingest|propagat",
+          "description": "Attributes the 404 to mirror node lag, not a missing transaction",
+          "rubric": "The output explains the 404 as mirror node ingestion lag (the mirror node trails consensus by a few seconds) rather than concluding the transaction does not exist or failed"
+        },
+        {
+          "name": "recommends-retry",
+          "type": "regex",
+          "value": "retry|poll|backoff|wait",
+          "description": "Recommends polling/retry with backoff",
+          "rubric": "The output recommends polling or retrying with a short backoff instead of treating the first 404 as final"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Read the last 10 messages from Hedera testnet HCS topic 0.0.5678 using the mirror node REST API and print each message's human-readable text along with its sequence number. JavaScript with native fetch.",
+      "expected_output": "Code that queries /topics/{id}/messages, decodes the base64 message field into UTF-8 text, and uses order/limit to get the most recent messages.",
+      "files": [],
+      "checks": [
+        {
+          "name": "decodes-base64-message",
+          "type": "regex",
+          "value": "base64",
+          "description": "Decodes the base64-encoded message field",
+          "rubric": "The output decodes the message field from base64 into UTF-8 text (for example Buffer.from(m.message, 'base64').toString('utf8') or atob), rather than printing the raw message field as if it were plain text"
+        },
+        {
+          "name": "uses-topic-messages-endpoint",
+          "type": "regex",
+          "value": "/topics/0\\.0\\.5678/messages|/topics/\\$\\{|/topics/.*/messages",
+          "description": "Queries the topic messages endpoint",
+          "rubric": "The output queries the /api/v1/topics/{topicId}/messages endpoint on testnet"
+        },
+        {
+          "name": "orders-for-most-recent",
+          "type": "regex",
+          "value": "order=desc|order=|limit=10|limit=",
+          "description": "Uses order/limit to select the most recent messages",
+          "rubric": "The output uses the limit and order query parameters (for example limit=10 with order=desc) to retrieve the most recent messages, rather than fetching everything and slicing client-side"
+        },
+        {
+          "name": "prints-sequence-number",
+          "type": "contains",
+          "value": "sequence_number",
+          "description": "Uses the sequence_number field",
+          "rubric": "The output reads the sequence_number field from each message and prints it alongside the decoded text"
+        }
+      ]
+    }
+  ]
+}

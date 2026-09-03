@@ -1,0 +1,53 @@
+{
+  "skill_name": "hedera-mirror-node",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Using the Hedera testnet mirror node REST API and native fetch (no SDK), write a JavaScript function that returns the EXACT tinybar balance of account 0.0.2 as a BigInt. 0.0.2 is a treasury account holding well over 3e18 tinybars. It is important that the returned value is byte-exact with what the API sent — do not lose any precision.",
+      "expected_output": "Code that reads the response as text (or otherwise avoids JSON.parse coercing the balance to a Number) and converts the big integer to BigInt exactly, rather than calling res.json() and then BigInt() on an already-rounded Number.",
+      "files": [],
+      "assertions": [
+        "The output avoids letting JSON.parse/res.json() coerce the large balance into a JS Number. It must read the payload as text (res.text()) and pre-process it (for example quoting long integer literals before JSON.parse), or use a big-integer-aware JSON parser, or use a Node 22+ JSON.parse reviver with context.source. Simply calling res.json() and then wrapping the result in BigInt() does NOT satisfy this check, because the precision is already lost by then.",
+        "The output explains that the balance exceeds Number.MAX_SAFE_INTEGER (about 9.007e15) and that a JS Number therefore cannot represent it exactly",
+        "The output produces the balance as a BigInt (not a Number or a lossy float)",
+        "The output queries the mirror node accounts endpoint (/api/v1/accounts/0.0.2) on testnet"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Using the Hedera mirror node REST API, write JavaScript that collects ALL transactions for account 0.0.1234 on testnet when there are several thousand of them. Explain how the pagination cursor works.",
+      "expected_output": "Code that loops following the response's links.next value, treating it as a relative path that already contains the cursor, until it is null.",
+      "files": [],
+      "assertions": [
+        "The output paginates by following the response's links.next value, looping until links.next is null",
+        "The output recognizes that links.next is a RELATIVE path already containing the cursor query parameters, and concatenates it onto the host/origin rather than treating it as an absolute URL or rebuilding the query string by hand",
+        "The output does NOT invent its own offset/page/skip parameters or manually increment a timestamp cursor; it relies on the links.next value the API returns",
+        "The output loops across multiple pages and accumulates the transactions, rather than issuing a single request"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I submitted a Hedera transaction and the SDK gave me the transaction ID 0.0.1234@1700000000.000000000. Immediately after getReceipt() I queried the mirror node for it and got a 404. Show me the correct mirror node URL to look this transaction up, and explain the 404.",
+      "expected_output": "Explains that the transaction ID must be converted to the dashed form 0.0.1234-1700000000-000000000 for the REST path, and that the 404 is mirror node ingestion lag requiring a retry/poll.",
+      "files": [],
+      "assertions": [
+        "The output converts the SDK transaction ID 0.0.1234@1700000000.000000000 into the mirror node path form 0.0.1234-1700000000-000000000, replacing BOTH the '@' separator AND the '.' between seconds and nanoseconds with dashes. Converting only the '@' (leaving 0.0.1234-1700000000.000000000) does NOT satisfy this check.",
+        "The output uses the /api/v1/transactions/{transactionId} endpoint with the converted ID",
+        "The output explains the 404 as mirror node ingestion lag (the mirror node trails consensus by a few seconds) rather than concluding the transaction does not exist or failed",
+        "The output recommends polling or retrying with a short backoff instead of treating the first 404 as final"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Read the last 10 messages from Hedera testnet HCS topic 0.0.5678 using the mirror node REST API and print each message's human-readable text along with its sequence number. JavaScript with native fetch.",
+      "expected_output": "Code that queries /topics/{id}/messages, decodes the base64 message field into UTF-8 text, and uses order/limit to get the most recent messages.",
+      "files": [],
+      "assertions": [
+        "The output decodes the message field from base64 into UTF-8 text (for example Buffer.from(m.message, 'base64').toString('utf8') or atob), rather than printing the raw message field as if it were plain text",
+        "The output queries the /api/v1/topics/{topicId}/messages endpoint on testnet",
+        "The output uses the limit and order query parameters (for example limit=10 with order=desc) to retrieve the most recent messages, rather than fetching everything and slicing client-side",
+        "The output reads the sequence_number field from each message and prints it alongside the decoded text"
+      ]
+    }
+  ]
+}

@@ -118,6 +118,17 @@
         "validators",
         "playwright"
       ]
+    },
+    {
+      "name": "mirror-node",
+      "description": "Read Hedera network state via the Mirror Node REST API — account balances, transactions, tokens, NFTs, HCS messages, and contract results, over raw fetch or a Hedera Agent Kit query tool",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/mirror-node",
+      "category": "development",
+      "keywords": ["hedera", "mirror-node", "rest-api", "query", "balance", "transactions", "nft", "read"]
     }
   ]
 }
