@@ -2,7 +2,7 @@
 
 Base path for every endpoint: `{BASE_URL}/api/v1`. All calls are `GET`, return JSON, and need no key, signature, or fee. Responses for list endpoints share the envelope `{ <collection>: [...], links: { next: string | null } }`.
 
-Interactive spec: `{BASE_URL}/api/v1/docs` (OpenAPI). This file summarizes the endpoints the skill uses most.
+Interactive spec: `{BASE_URL}/api/v1/docs` (OpenAPI; redirects to the Swagger UI). This file summarizes the endpoints the skill uses most.
 
 ## Comparison operators
 
@@ -148,4 +148,7 @@ Params: `account.id`, `schedule.id`, `limit`, `order`.
 - **Consistency:** mirror data lags consensus by a few seconds; poll with backoff after a write.
 - **Pagination:** follow `links.next` (a ready-to-use relative path incl. cursor) until `null`.
 - **Rate limits:** public hosts throttle; honor `429` + `Retry-After`, prefer `limit=100`, cache where possible.
-- **Amounts:** integers in the smallest unit — HBAR in tinybars (÷1e8), fungible tokens ÷ `10 ** decimals`.
+- **Amounts:** integers in the smallest unit — HBAR in tinybars, fungible tokens scaled by `10 ** decimals`.
+  Parse them with `BigInt`, and read the response as **text** first: the API returns amounts as JSON
+  *numbers*, so `res.json()` rounds anything above `Number.MAX_SAFE_INTEGER` before `BigInt` can help
+  (see the precision warning in `SKILL.md`).

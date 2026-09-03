@@ -261,7 +261,7 @@ Read-only access to Hedera network state through the Mirror Node REST API (`GET 
 
 **Skills included:**
 
-- **hedera-mirror-node** — Query account balances, transactions, tokens, NFTs, HCS topic messages, and contract results via the Mirror Node REST API. Covers base URLs per network, filtering/ordering operators, cursor pagination (`links.next`), the `context.mirrornodeService` path for Agent Kit query tools, and consistency/rate-limit gotchas.
+- **hedera-mirror-node** — Query account balances, transactions, tokens, NFTs, HCS topic messages, and contract results via the Mirror Node REST API. Covers base URLs per network, filtering/ordering operators, cursor pagination (`links.next`), big-integer balance precision (balances exceed `Number.MAX_SAFE_INTEGER` and are corrupted by `JSON.parse`), the dashed transaction-ID path form, and consistency/rate-limit gotchas.
 
 **Use when:**
 
@@ -269,7 +269,7 @@ Read-only access to Hedera network state through the Mirror Node REST API (`GET 
 - Looking up an account balance, token info, or NFT ownership
 - Paging through transaction or message history
 - Reading HCS topic messages or contract call results
-- Building a read-only Agent Kit query tool backed by the mirror node
+- Reading exact treasury-sized balances without precision loss
 
 **References included:**
 
@@ -277,9 +277,8 @@ Read-only access to Hedera network state through the Mirror Node REST API (`GET 
 
 **Examples included:**
 
-- `query-account.mjs` - Balance + token/NFT lookups over raw REST (runnable, no deps)
+- `query-account.mjs` - Balance + token/NFT lookups over raw REST, with precision-safe JSON parsing (runnable, no deps)
 - `paginate.mjs` - Cursor pagination helper following `links.next`
-- `get-account-nfts-tool.ts` - Agent Kit query `BaseTool` preferring `context.mirrornodeService`
 
 ## Marketplace Structure
 
