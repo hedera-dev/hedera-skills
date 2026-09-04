@@ -1,0 +1,121 @@
+{
+  "skill_name": "hedera-accounts-keys",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "In a Node.js app I read a Hedera operator private key from process.env.OPERATOR_KEY. The key may be either ED25519 or ECDSA depending on which account the user configures — I do not know the curve ahead of time. Show me how to parse it correctly with @hiero-ledger/sdk, and explain what goes wrong if I get it wrong.",
+      "expected_output": "Code using PrivateKey.fromStringDer() (or fromString on a DER string), with an explanation that curve-specific parsers accept the wrong curve silently and derive a different key.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-der-parser",
+          "type": "contains",
+          "value": "fromStringDer",
+          "description": "Uses fromStringDer to parse a key of unknown curve",
+          "rubric": "The output parses the key with PrivateKey.fromStringDer() (or PrivateKey.fromString() on a DER-encoded string), because that is the only parser that reads the algorithm from the encoding. Recommending PrivateKey.fromStringECDSA() or fromStringED25519() as the primary approach when the curve is unknown does NOT satisfy this check."
+        },
+        {
+          "name": "warns-silent-failure",
+          "type": "regex",
+          "value": "silent|no error|without error|does not throw|different (public )?key|wrong key",
+          "description": "Warns that the wrong parser fails silently",
+          "rubric": "The output warns that passing a key to the wrong curve-specific parser does NOT throw — it succeeds and derives a different public key. Merely saying 'use the right parser' without explaining that the wrong one silently succeeds does not satisfy this."
+        },
+        {
+          "name": "explains-32-bytes",
+          "type": "regex",
+          "value": "32[ -]byte|32 bytes|same length|indistinguishable|cannot (be )?(tell|distinguish)",
+          "description": "Explains why the wrong key is accepted",
+          "rubric": "The output explains the root cause: a raw private key is 32 bytes on both curves, so a raw-hex parser has nothing to validate against"
+        },
+        {
+          "name": "names-consequence",
+          "type": "regex",
+          "value": "INVALID_SIGNATURE|signature|does not exist|wrong account",
+          "description": "Names the downstream symptom",
+          "rubric": "The output names the downstream symptom — failing signatures (e.g. INVALID_SIGNATURE) or transacting against an account that does not exist"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I have a Hedera account 0.0.1234 that uses an ED25519 key. I need its EVM address so I can use it from a Solidity contract. Using @hiero-ledger/sdk, how do I get it?",
+      "expected_output": "Explains that ED25519 keys have no derived EVM address (publicKey.toEvmAddress() throws) and that the account still has a long-zero EVM address obtained from AccountId.toEvmAddress().",
+      "files": [],
+      "checks": [
+        {
+          "name": "ed25519-has-no-derived-evm",
+          "type": "regex",
+          "value": "ED25519|Ed25519",
+          "description": "States ED25519 keys have no derived EVM address",
+          "rubric": "The output states that an ED25519 public key has no derived EVM address — publicKey.toEvmAddress() is unsupported and throws for Ed25519. Claiming you can derive an EVM address from the ED25519 public key does NOT satisfy this check."
+        },
+        {
+          "name": "uses-accountid-long-zero",
+          "type": "regex",
+          "value": "AccountId|long[- ]zero|toEvmAddress",
+          "description": "Points to the long-zero address from the account ID",
+          "rubric": "The output explains the account still has a long-zero EVM address derived from its account number, obtained via AccountId.fromString('0.0.1234').toEvmAddress()"
+        },
+        {
+          "name": "avoids-removed-api",
+          "type": "regex",
+          "value": "toEvmAddress",
+          "description": "Uses toEvmAddress, not the removed toSolidityAddress",
+          "rubric": "The output uses toEvmAddress(). Recommending toSolidityAddress() as current API does NOT satisfy this check — it was removed from the SDK and raises a TypeError."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I queried the Hedera mirror node for an account and got back \"key\": null with an \"alias\" and an \"evm_address\" set. Is this account broken? What is it, and what is the alias field?",
+      "expected_output": "Explains this is a hollow account created by sending value to an EVM address before the account existed, that it cannot sign until finalized, and that alias is the base32 encoding of the same 20 bytes as evm_address.",
+      "files": [],
+      "checks": [
+        {
+          "name": "identifies-hollow-account",
+          "type": "regex",
+          "value": "hollow|lazy|auto[- ]creat",
+          "description": "Identifies it as a hollow / lazily created account",
+          "rubric": "The output identifies this as a hollow (lazily created) account — created when value was sent to an EVM address that had no account yet — and NOT as a broken or corrupt account"
+        },
+        {
+          "name": "explains-cannot-sign-yet",
+          "type": "regex",
+          "value": "cannot sign|can't sign|not.*sign|finaliz|complet",
+          "description": "Explains the account cannot sign until finalized",
+          "rubric": "The output explains that with no key the account cannot sign yet, and that it is finalized/completed when a transaction signed by the matching ECDSA key is submitted"
+        },
+        {
+          "name": "alias-is-base32-evm",
+          "type": "regex",
+          "value": "base32|base 32",
+          "description": "Explains alias is base32 of the EVM address bytes",
+          "rubric": "The output explains that the alias field is the base32 encoding of the same 20 bytes as evm_address — the two are the same value in different encodings"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Using @hiero-ledger/sdk, set up a Hedera account key that requires any 2 of 3 signers. Also explain what happens if I build the KeyList without specifying a threshold.",
+      "expected_output": "Uses new KeyList(keys, 2) for 2-of-3, and explains that omitting the threshold (null) requires ALL keys to sign, not one.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-keylist-threshold",
+          "type": "regex",
+          "value": "KeyList",
+          "description": "Uses KeyList with a threshold of 2",
+          "rubric": "The output constructs a KeyList of three public keys with a threshold of 2 (for example new KeyList([k1,k2,k3], 2) or .setThreshold(2))"
+        },
+        {
+          "name": "null-threshold-means-all",
+          "type": "regex",
+          "value": "all|every",
+          "description": "Explains a null threshold requires all keys",
+          "rubric": "The output explains that a KeyList built without a threshold has threshold null, which requires ALL keys to sign. Saying that it means any one key suffices does NOT satisfy this check."
+        }
+      ]
+    }
+  ]
+}

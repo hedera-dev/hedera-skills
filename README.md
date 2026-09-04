@@ -154,6 +154,7 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 - **hedera-token-service** — Token creation (fungible and NFT), minting, burning, transfers, key roles, compliance operations (KYC, freeze, wipe, pause), airdrops, and custom fees using the Hiero JS SDK.
 - **hedera-consensus-service** — Topic creation, message submission with chunking support, subscription patterns via mirror nodes, topic management, and common patterns (event logs, pub/sub).
 - **x402-payments** — x402 HTTP 402 pay-per-use with native HBAR: FileRegistry metadata, self-hosted facilitator verify/settle, and HashPack client payment retries.
+- **hedera-accounts-keys** — ED25519 vs ECDSA key selection, safe key parsing (`fromStringDer`), account ID / long-zero / derived EVM addresses, aliases, hollow accounts, and `KeyList` threshold keys.
 
 **Use when:**
 
@@ -162,6 +163,8 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 - Working with Hedera Consensus Service topics and messages
 - Setting up custom fees, compliance operations, or airdrops
 - Subscribing to topic messages via mirror nodes
+- Choosing between ED25519 and ECDSA keys, or debugging `INVALID_SIGNATURE` from a mis-parsed key
+- Converting between account IDs, EVM addresses, and aliases
 - Gating downloads or APIs behind x402 HBAR payments on Hedera
 - Wiring a self-hosted x402 facilitator or ExactHederaScheme resource server
 
