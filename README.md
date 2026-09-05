@@ -19,6 +19,7 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin install hackathon-helper
 /plugin install hedera-harness
 /plugin install dev-intelligence
+/plugin install business-enablement
 ```
 
 ### Other Agents (npx skills)
@@ -254,6 +255,21 @@ AI development workflow toolkit — session continuity, quality gates, project s
 
 - PostToolUse (Edit/Write) — Auto-runs stack-appropriate linter/type-checker after every edit
 
+### business-enablement
+
+Live discovery-call workshop for taking a non-technical external prospect from "never heard of Web3" to a scoped MVP proposal in a single sitting. Guides the seller through qualifying questions, tailored Hedera use-case options, and a short architecture sketch to move toward closing.
+
+**Skills included:**
+
+- **hedera-discovery-workshop** — 5-phase live call script: qualify (mutual-distrust gate), present tailored use-case options from a generic pattern catalog, scope a minimal MVP with the client, sketch the technical architecture in plain terms, and close.
+
+**Use when:**
+
+- Preparing for or running a sales/discovery call with a non-technical prospect
+- Deciding whether DLT is actually worth integrating into an existing business process (vs. a plain database or PKI signatures)
+- Need to present Hedera use-case options tailored to a specific business, not a generic pitch
+- Want to leave a discovery call with a signed-off MVP scope, not just a slide deck
+
 ## Marketplace Structure
 
 ```
@@ -331,20 +347,25 @@ hedera-skills/
 │   │           ├── SKILL.md
 │   │           ├── evals/
 │   │           └── references/
-│   └── dev-intelligence/     # Dev workflow intelligence
-│       ├── skills/
-│       │   ├── session-management/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   ├── quality-gates/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   └── project-scaffolding/
-│       │       ├── SKILL.md
-│       │       └── references/
-│       ├── commands/
-│       ├── hooks/
-│       └── scripts/
+│   ├── dev-intelligence/     # Dev workflow intelligence
+│   │   ├── skills/
+│   │   │   ├── session-management/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   ├── quality-gates/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   └── project-scaffolding/
+│   │   │       ├── SKILL.md
+│   │   │       └── references/
+│   │   ├── commands/
+│   │   ├── hooks/
+│   │   └── scripts/
+│   └── business-enablement/  # Sales/discovery-call workshop
+│       └── skills/
+│           └── hedera-discovery-workshop/
+│               ├── SKILL.md
+│               └── references/
 └── README.md
 ```
 

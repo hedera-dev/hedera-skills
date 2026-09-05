@@ -118,6 +118,17 @@
         "validators",
         "playwright"
       ]
+    },
+    {
+      "name": "business-enablement",
+      "description": "Live discovery-call workshop for non-technical prospects: qualifying questions, tailored Hedera use-case options, and a scoped MVP + architecture sketch to move toward closing",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/business-enablement",
+      "category": "business",
+      "keywords": ["hedera", "sales", "discovery", "mvp", "use-case", "business", "consulting"]
     }
   ]
 }
