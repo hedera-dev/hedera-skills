@@ -181,12 +181,13 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 
 ### hackathon-helper
 
-Two skills for Hedera hackathon participants: project planning and submission validation, both aligned to the official judging criteria. Compatible with any AI coding agent that supports skills (Claude Code, Codex, Gemini CLI, etc.).
+Three skills for Hedera hackathon participants: project planning, submission validation, and pre-submission knowledge validation, all aligned to the official judging criteria. Compatible with any AI coding agent that supports skills (Claude Code, Codex, Gemini CLI, etc.).
 
 **Skills included:**
 
 - **hackathon-prd** - Interactive PRD generator. Asks participants to paste their bounty/track context, gathers project details, then generates a comprehensive PRD (`HACKATHON-PRD.md`) with a predicted score and improvement tips.
 - **validate-submission** - Codebase reviewer. Scans the repo for Hedera integration depth, code quality, and documentation, then produces a weighted scorecard against all 7 judging criteria with prioritized action items.
+- **hedera-knowledge-passport** - Validates that participants actually understand the Hedera services their project uses, not just that they copied code that works. Four-step flow: detects services from code or a project description, explains each one in depth, asks graded validation questions, and generates a shareable "Knowledge Passport" documenting the understanding behind the architecture.
 
 **Use when:**
 
@@ -194,6 +195,7 @@ Two skills for Hedera hackathon participants: project planning and submission va
 - Want to ensure your project addresses all judging criteria
 - Ready to validate your submission before the deadline
 - Need to identify quick wins to improve your hackathon score
+- Preparing for judges' questions or deciding between two services for the same use case (e.g., HTS vs. Smart Contract)
 
 **Judging criteria covered:**
 
@@ -204,6 +206,13 @@ Two skills for Hedera hackathon participants: project planning and submission va
 - Validation (15%) - Market feedback, early adopters, traction
 - Success (20%) - Hedera account growth, TPS impact, audience exposure
 - Pitch (10%) - Problem/solution clarity, metrics, Hedera representation
+
+**References included (hedera-knowledge-passport):**
+
+- `decision-matrix.md` - Quick "which service for my case" lookup, cost comparison table, and common architecture traps
+- `service-guide.md` - Deep dive per service (HTS, HCS, Smart Contracts, HSS, HBAR transfers, HFS, Account Management, Mirror Nodes)
+- `validation-rubrics.md` - Per-service validation questions with pass/partial/fail grading criteria
+- `example-passports.md` - Three worked examples (stablecoin, NFT marketplace, audit trail system)
 
 ### hedera-harness
 
@@ -267,12 +276,15 @@ hedera-skills/
 │   │           ├── SKILL.md
 │   │           ├── examples/
 │   │           └── references/
-│   ├── hackathon-helper/     # Hackathon PRD & validation
+│   ├── hackathon-helper/     # Hackathon PRD, validation & knowledge passport
 │   │   └── skills/
 │   │       ├── hackathon-prd/
 │   │       │   ├── SKILL.md
 │   │       │   └── references/
-│   │       └── validate-submission/
+│   │       ├── validate-submission/
+│   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       └── hedera-knowledge-passport/
 │   │           ├── SKILL.md
 │   │           └── references/
 │   ├── system-contracts/     # Hedera system contract references

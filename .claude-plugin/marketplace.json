@@ -64,14 +64,14 @@
     },
     {
       "name": "hackathon-helper",
-      "description": "PRD generation and submission validation for Hedera hackathon participants, aligned to official judging criteria",
-      "version": "1.0.0",
+      "description": "PRD generation, submission validation, and pre-submission knowledge validation for Hedera hackathon participants, aligned to official judging criteria",
+      "version": "1.1.0",
       "author": {
         "name": "Hedera Dev"
       },
       "source": "./plugins/hackathon-helper",
       "category": "workflow",
-      "keywords": ["hedera", "hackathon", "prd", "validation", "judging-criteria"]
+      "keywords": ["hedera", "hackathon", "prd", "validation", "judging-criteria", "knowledge-passport", "education"]
     },
     {
       "name": "dev-intelligence",
