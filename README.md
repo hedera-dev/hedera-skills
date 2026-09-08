@@ -19,6 +19,7 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin install hackathon-helper
 /plugin install hedera-harness
 /plugin install dev-intelligence
+/plugin install agent-identity
 ```
 
 ### Other Agents (npx skills)
@@ -254,6 +255,37 @@ AI development workflow toolkit — session continuity, quality gates, project s
 
 - PostToolUse (Edit/Write) — Auto-runs stack-appropriate linter/type-checker after every edit
 
+### agent-identity
+
+HCS-14 agent identity, registration, and discovery on Hedera — giving AI agents an on-chain identity using Universal Agent IDs (UAIDs), HCS-2 registry topics, and HCS-11 profiles, with discovery via the Mirror Node REST API and bridging to ERC-8004, A2A, and x402.
+
+**Skills included:**
+
+- **hcs-14-agent-identity** — UAID generation (AID deterministic hash + DID self-sovereign), HCS-2 registry topic creation, agent and provider registration, Mirror Node discovery with pagination and profile resolution, capability/service descriptors, and cross-protocol bridging (ERC-8004, A2A, x402).
+
+**Use when:**
+
+- Giving an AI agent an on-chain identity on Hedera
+- Registering an agent or provider to an HCS registry topic
+- Discovering agents by reading registry topics via the Mirror Node REST API
+- Generating or parsing Universal Agent IDs (UAIDs)
+- Bridging Hedera agent identity to ERC-8004, A2A, or x402
+- Building agentic payment systems that need identity + discovery
+
+**References included:**
+
+- `uaid-format.md` - UAID grammar, parsing, validation, canonicalization, and generation
+- `mirror-node-discovery.md` - Mirror Node REST API endpoints for reading registry topics and resolving profiles
+- `erc-8004-bridge.md` - How HCS-14 maps to ERC-8004 on-chain agent identity registries
+
+**Examples included:**
+
+- `register-agent.ts` - Full agent registration flow (registry topic + UAID + profile + registration)
+- `discover-agents.ts` - Discovery via Mirror Node REST API with pagination and profile resolution
+- `register-provider.ts` - Provider/operator registration with child agent registration
+
+**Design principle:** Identity registration, discovery, and payment evidence (x402) are kept as separate concerns. Trust and reputation are computed downstream from typed claims.
+
 ## Marketplace Structure
 
 ```
@@ -331,20 +363,28 @@ hedera-skills/
 │   │           ├── SKILL.md
 │   │           ├── evals/
 │   │           └── references/
-│   └── dev-intelligence/     # Dev workflow intelligence
-│       ├── skills/
-│       │   ├── session-management/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   ├── quality-gates/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   └── project-scaffolding/
-│       │       ├── SKILL.md
-│       │       └── references/
-│       ├── commands/
-│       ├── hooks/
-│       └── scripts/
+│   ├── dev-intelligence/     # Dev workflow intelligence
+│   │   ├── skills/
+│   │   │   ├── session-management/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   ├── quality-gates/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   └── project-scaffolding/
+│   │   │       ├── SKILL.md
+│   │   │       └── references/
+│   │   ├── commands/
+│   │   ├── hooks/
+│   │   └── scripts/
+│   └── agent-identity/       # HCS-14 agent identity, registration & discovery
+│       ├── README.md
+│       └── skills/
+│           └── hcs-14-agent-identity/
+│               ├── SKILL.md
+│               ├── references/
+│               ├── examples/
+│               └── evals/
 └── README.md
 ```
 

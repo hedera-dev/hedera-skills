@@ -118,6 +118,17 @@
         "validators",
         "playwright"
       ]
+    },
+    {
+      "name": "agent-identity",
+      "description": "HCS-14 agent identity, registration, and discovery on Hedera — Universal Agent IDs (UAIDs), HCS-2 registry topics, HCS-11 profiles, Mirror Node discovery, and bridging to ERC-8004, A2A, and x402",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/agent-identity",
+      "category": "development",
+      "keywords": ["hedera", "hcs-14", "agent-identity", "uaid", "registry", "discovery", "hcs-2", "hcs-11", "erc-8004", "a2a", "x402", "agents"]
     }
   ]
 }

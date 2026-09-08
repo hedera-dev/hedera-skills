@@ -1,0 +1,48 @@
+{
+  "skill_name": "hcs-14-agent-identity",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Create an HCS-14 registry topic on Hedera testnet, generate a UAID for an agent named 'Analysis Bot' with skills [0, 7] using the AID method, create an HCS-11 profile topic, submit the profile, and register the agent on the registry topic. Write the full TypeScript script using @hiero-ledger/sdk.",
+      "expected_output": "A complete TypeScript script that creates a registry topic, generates a UAID via SHA-384 hash of canonical agent data, creates a profile topic, submits an HCS-11 profile, and submits an HCS-2 register operation to the registry topic.",
+      "files": [],
+      "assertions": [
+        "The output imports from @hiero-ledger/sdk",
+        "The output uses TopicCreateTransaction to create the registry topic",
+        "The output generates a UAID by computing a SHA-384 hash of canonical agent data and encoding it (e.g. using createHash('sha384') or a standards SDK call)",
+        "The output satisfies: Uses the six canonical agent data fields for the AID hash",
+        "The output uses TopicMessageSubmitTransaction to submit the HCS-11 profile",
+        "The output submits a JSON message with p: 'hcs-2' and op: 'register' to the registry topic",
+        "The output includes uaid: Includes the UAID in the HCS-11 profile or registration memo",
+        "The output includes JSON.stringify: Serializes structured JSON messages for topic submission"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Write a TypeScript script that discovers agents registered to an HCS-14 registry topic by reading messages from the Hedera Mirror Node REST API. Parse HCS-2 register operations, extract UAIDs from memos, and resolve each agent's HCS-11 profile from its profile topic.",
+      "expected_output": "A TypeScript script that fetches messages from the Mirror Node REST API, decodes base64 messages, parses HCS-2 operations, extracts UAIDs, and resolves HCS-11 profiles by reading profile topics.",
+      "files": [],
+      "assertions": [
+        "The output satisfies: Queries the Mirror Node REST API for topic messages",
+        "The output decodes the base64-encoded message field from the mirror node response before parsing JSON",
+        "The output satisfies: Parses HCS-2 operations from the decoded messages",
+        "The output follows pagination links (links.next) to retrieve all messages from the topic",
+        "The output includes uaid: Extracts or references UAIDs from registration memos",
+        "The output satisfies: Resolves agent profiles from their profile topic IDs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Explain how HCS-14 agent identity on Hedera bridges to ERC-8004 on EVM chains. What are the mapping points between UAIDs and ERC-8004 agent registries, and how should cross-chain agent identity and x402 payment evidence be handled?",
+      "expected_output": "An explanation covering the UAID to ERC-8004 agentRegistry mapping, HCS-2 topic to ERC-721 identity registry mapping, cross-registration via the registrations array, and the principle that identity/discovery, payment evidence (x402), and trust/reputation should be kept as separate concerns.",
+      "files": [],
+      "assertions": [
+        "The output includes ERC-8004: References ERC-8004 by name",
+        "The output satisfies: Maps UAIDs to ERC-8004 agentRegistry / agentId format",
+        "The output satisfies: Explains cross-registration between HCS-14 and ERC-8004",
+        "The output explains that identity registration/discovery, x402 payment evidence, and trust/reputation computation are kept as separate concerns (payment evidence is not embedded in the registry)",
+        "The output satisfies: Mentions skill ID alignment between HCS-14 and ERC-8004"
+      ]
+    }
+  ]
+}
