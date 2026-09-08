@@ -54,10 +54,24 @@ Payment requirements typically include:
 
 ## Client retry loop
 
+The client must opt native HBAR into spend controls, or `createPaymentPayload`
+throws before anything is signed — HBAR is not a default asset on Hedera (USDC is).
+
 ```ts
-const httpClient = new x402HTTPClient(
-  new x402Client().register(network, new ExactHederaScheme(signer)),
-);
+import { ExactHederaScheme, HBAR_ASSET_ID } from "@x402/hedera";
+
+// setSpendControls, not the constructor: `new x402Client({...})` takes a
+// selector function and silently discards a config object.
+const client = new x402Client()
+  .setSpendControls({
+    allowedAssets: [
+      // maxAmountPerPayment is atomic tinybars, not a dollar string
+      { network, asset: HBAR_ASSET_ID, maxAmountPerPayment: "20000000" }, // 0.2 HBAR
+    ],
+  })
+  .register(network, new ExactHederaScheme(signer));
+
+const httpClient = new x402HTTPClient(client);
 
 const first = await fetch(resourceUrl);
 if (first.status === 402) {

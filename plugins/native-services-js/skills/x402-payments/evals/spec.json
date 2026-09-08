@@ -1,0 +1,183 @@
+{
+  "skill_name": "x402-payments",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a TypeScript x402 client that pays for a resource priced in native HBAR on hedera:testnet. Use @x402/hedera and @x402/core, sign with a key-based signer, and show the 402 retry loop.",
+      "expected_output": "A client that registers ExactHederaScheme and explicitly allows the native HBAR asset in spend controls before creating a payment payload.",
+      "files": [],
+      "checks": [
+        {
+          "name": "allows-native-hbar",
+          "type": "regex",
+          "value": "allowedAssets",
+          "description": "Opts native HBAR into spend controls",
+          "rubric": "The output configures spend controls to allow the native HBAR asset (asset id 0.0.0 or HBAR_ASSET_ID)"
+        },
+        {
+          "name": "sets-controls-correctly",
+          "type": "contains",
+          "value": "setSpendControls",
+          "description": "Uses setSpendControls or fromConfig, not the constructor",
+          "rubric": "The output sets spend controls via setSpendControls or x402Client.fromConfig, and does not pass a config object to the x402Client constructor"
+        },
+        {
+          "name": "registers-hedera-scheme",
+          "type": "contains",
+          "value": "ExactHederaScheme",
+          "description": "Registers the Hedera exact scheme for the network"
+        },
+        {
+          "name": "retries-after-402",
+          "type": "regex",
+          "value": "402",
+          "description": "Retries with a payment header after a 402 challenge",
+          "rubric": "The output retries the request with a payment header after receiving HTTP 402"
+        },
+        {
+          "name": "atomic-tinybar-cap",
+          "type": "regex",
+          "value": "maxAmountPerPayment",
+          "description": "Any per-payment cap is atomic tinybars, not a dollar string",
+          "rubric": "Any per-payment cap is expressed as an atomic integer string of tinybars, not a dollar value such as \"$1\""
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "My x402 client on Hedera fails with: 'Failed to create payment payload: All payment requirements were rejected by spendControls: only default assets or entries in spendControls.allowedAssets are allowed.' The route is priced in native HBAR. What is wrong and how do I fix it?",
+      "expected_output": "An explanation that native HBAR is not a default asset on Hedera (USDC is) and that it must be opted in through allowedAssets.",
+      "files": [],
+      "checks": [
+        {
+          "name": "diagnoses-default-asset",
+          "type": "regex",
+          "value": "default asset|USDC",
+          "description": "Identifies that HBAR is not a recognized default asset",
+          "rubric": "The output explains that native HBAR is not a recognized default asset on Hedera, so spend controls reject it before signing"
+        },
+        {
+          "name": "fixes-with-allowlist",
+          "type": "contains",
+          "value": "allowedAssets",
+          "description": "Fixes it by allowlisting HBAR",
+          "rubric": "The output fixes it by adding an allowedAssets entry for the HBAR asset rather than only disabling spend controls"
+        },
+        {
+          "name": "prefers-allowlist-over-disable",
+          "type": "regex",
+          "value": "spendControls",
+          "description": "Notes that disabling spend controls is the weaker option",
+          "rubric": "The output notes that disabling spend controls entirely is the weaker option because the control protects against paying in unknown assets"
+        },
+        {
+          "name": "correct-configuration-path",
+          "type": "regex",
+          "value": "setSpendControls|fromConfig",
+          "description": "Uses setSpendControls or fromConfig",
+          "rubric": "The output uses setSpendControls or fromConfig rather than the x402Client constructor"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I set up an x402 route on Hedera. The 402 challenge is returned correctly and the client signs, but the retry comes back as another 402 with an empty body. There is no error in my resource server logs. What should I check?",
+      "expected_output": "Guidance that payTo must be a different account from the payer, because paying yourself is a zero net transfer that fails verification silently.",
+      "files": [],
+      "checks": [
+        {
+          "name": "identifies-zero-net-transfer",
+          "type": "regex",
+          "value": "payTo",
+          "description": "Identifies payer == payTo as a zero net transfer",
+          "rubric": "The output identifies that payTo pointing at the paying account produces a zero net transfer"
+        },
+        {
+          "name": "explains-silent-failure",
+          "type": "regex",
+          "value": "402",
+          "description": "Explains the failure surfaces as a bare 402 with no detail",
+          "rubric": "The output explains that this failure surfaces as a bare 402 with no error detail, so it is easily mistaken for a signing or facilitator problem"
+        },
+        {
+          "name": "prescribes-separate-account",
+          "type": "regex",
+          "value": "separate|different|second",
+          "description": "Prescribes a separate seller account",
+          "rubric": "The output tells the developer to use a separate seller or treasury account for payTo"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a second funded Hedera testnet account from my operator account so my x402 seller is not the same account as the buyer. Use the Hiero SDK from TypeScript.",
+      "expected_output": "Code using AccountCreateTransaction with an ECDSA key, imported from @hiero-ledger/sdk, with a note about duplicate SDK copies.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-account-create",
+          "type": "contains",
+          "value": "AccountCreateTransaction",
+          "description": "Uses AccountCreateTransaction"
+        },
+        {
+          "name": "ecdsa-key",
+          "type": "regex",
+          "value": "ECDSA",
+          "description": "Generates an ECDSA key, not ED25519",
+          "rubric": "The output generates or uses an ECDSA key rather than ED25519"
+        },
+        {
+          "name": "imports-from-hiero",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Imports from @hiero-ledger/sdk, not @x402/hedera",
+          "rubric": "The output imports AccountCreateTransaction from @hiero-ledger/sdk, noting it is not re-exported by @x402/hedera"
+        },
+        {
+          "name": "awaits-receipt",
+          "type": "contains",
+          "value": "getReceipt",
+          "description": "Reads the new account id from the receipt",
+          "rubric": "The output calls getReceipt (or equivalent) to obtain the new account id rather than assuming execute alone succeeded"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Explain how settlement works for x402 on Hedera: who signs, who pays the network fee, and what the resource server must not hold.",
+      "expected_output": "The buyer partially signs a TransferTransaction, the facilitator co-signs as fee payer and submits, and the resource server holds no facilitator key.",
+      "files": [],
+      "checks": [
+        {
+          "name": "buyer-partially-signs",
+          "type": "regex",
+          "value": "partial|partially",
+          "description": "Buyer partially signs a TransferTransaction",
+          "rubric": "The output states that the buyer partially signs a native TransferTransaction"
+        },
+        {
+          "name": "facilitator-pays-fee",
+          "type": "regex",
+          "value": "fee payer|feePayer|fee-payer",
+          "description": "Facilitator co-signs as fee payer and submits",
+          "rubric": "The output states that the facilitator co-signs as the advertised fee payer and pays the network fee"
+        },
+        {
+          "name": "server-holds-no-key",
+          "type": "regex",
+          "value": "resource server",
+          "description": "Resource server must not hold the facilitator key",
+          "rubric": "The output states that the resource server must not hold the facilitator private key"
+        },
+        {
+          "name": "fee-payer-ecdsa-funded",
+          "type": "regex",
+          "value": "ECDSA",
+          "description": "Fee-payer account is ECDSA and funded",
+          "rubric": "The output notes the facilitator fee-payer account must be ECDSA and funded"
+        }
+      ]
+    }
+  ]
+}

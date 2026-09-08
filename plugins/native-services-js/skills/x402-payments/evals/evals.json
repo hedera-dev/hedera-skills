@@ -1,0 +1,65 @@
+{
+  "skill_name": "x402-payments",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a TypeScript x402 client that pays for a resource priced in native HBAR on hedera:testnet. Use @x402/hedera and @x402/core, sign with a key-based signer, and show the 402 retry loop.",
+      "expected_output": "A client that registers ExactHederaScheme and explicitly allows the native HBAR asset in spend controls before creating a payment payload.",
+      "files": [],
+      "assertions": [
+        "The output configures spend controls to allow the native HBAR asset (asset id 0.0.0 or HBAR_ASSET_ID)",
+        "The output sets spend controls via setSpendControls or x402Client.fromConfig, and does NOT pass a config object to the x402Client constructor",
+        "The output registers ExactHederaScheme for a hedera network identifier",
+        "The output retries the request with a payment header after receiving HTTP 402",
+        "Any per-payment cap is expressed as an atomic integer string of tinybars, not a dollar value such as \"$1\""
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "My x402 client on Hedera fails with: 'Failed to create payment payload: All payment requirements were rejected by spendControls: only default assets or entries in spendControls.allowedAssets are allowed.' The route is priced in native HBAR. What is wrong and how do I fix it?",
+      "expected_output": "An explanation that native HBAR is not a default asset on Hedera (USDC is) and that it must be opted in through allowedAssets.",
+      "files": [],
+      "assertions": [
+        "The output explains that native HBAR is not a recognized default asset on Hedera, so spend controls reject it before signing",
+        "The output fixes it by adding an allowedAssets entry for the HBAR asset rather than only disabling spend controls",
+        "The output notes that disabling spend controls entirely is the weaker option because the control protects against paying in unknown assets",
+        "The output uses setSpendControls or fromConfig rather than the x402Client constructor"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I set up an x402 route on Hedera. The 402 challenge is returned correctly and the client signs, but the retry comes back as another 402 with an empty body. There is no error in my resource server logs. What should I check?",
+      "expected_output": "Guidance that payTo must be a different account from the payer, because paying yourself is a zero net transfer that fails verification silently.",
+      "files": [],
+      "assertions": [
+        "The output identifies that payTo pointing at the paying account produces a zero net transfer",
+        "The output explains that this failure surfaces as a bare 402 with no error detail, so it is easily mistaken for a signing or facilitator problem",
+        "The output tells the developer to use a separate seller or treasury account for payTo"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a second funded Hedera testnet account from my operator account so my x402 seller is not the same account as the buyer. Use the Hiero SDK from TypeScript.",
+      "expected_output": "Code using AccountCreateTransaction with an ECDSA key, imported from @hiero-ledger/sdk, with a note about duplicate SDK copies.",
+      "files": [],
+      "assertions": [
+        "The output uses AccountCreateTransaction to create the account",
+        "The output generates or uses an ECDSA key rather than ED25519",
+        "The output imports AccountCreateTransaction from @hiero-ledger/sdk, noting it is not re-exported by @x402/hedera",
+        "The output calls getReceipt (or equivalent) to obtain the new account id rather than assuming execute alone succeeded"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Explain how settlement works for x402 on Hedera: who signs, who pays the network fee, and what the resource server must not hold.",
+      "expected_output": "The buyer partially signs a TransferTransaction, the facilitator co-signs as fee payer and submits, and the resource server holds no facilitator key.",
+      "files": [],
+      "assertions": [
+        "The output states that the buyer partially signs a native TransferTransaction",
+        "The output states that the facilitator co-signs as the advertised fee payer and pays the network fee",
+        "The output states that the resource server must not hold the facilitator private key",
+        "The output notes the facilitator fee-payer account must be ECDSA and funded"
+      ]
+    }
+  ]
+}
