@@ -153,6 +153,7 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 
 - **hedera-token-service** — Token creation (fungible and NFT), minting, burning, transfers, key roles, compliance operations (KYC, freeze, wipe, pause), airdrops, and custom fees using the Hiero JS SDK.
 - **hedera-consensus-service** — Topic creation, message submission with chunking support, subscription patterns via mirror nodes, topic management, and common patterns (event logs, pub/sub).
+- **hedera-schedule-service** — Threshold-key (m-of-n multi-sig) accounts via `KeyList`, and scheduled transactions via `ScheduleCreateTransaction`/`ScheduleSignTransaction`/`ScheduleInfoQuery` — Hedera-native treasury-release and delayed-execution patterns using the Hiero JS SDK.
 - **x402-payments** — x402 HTTP 402 pay-per-use with native HBAR: FileRegistry metadata, self-hosted facilitator verify/settle, and HashPack client payment retries.
 
 **Use when:**
@@ -160,6 +161,7 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 - Building JavaScript/TypeScript apps that interact with Hedera Token Service
 - Creating, minting, or transferring tokens using the Hiero JS SDK
 - Working with Hedera Consensus Service topics and messages
+- Building multi-signature treasury/approval flows or delayed/future-dated transactions with native KeyList threshold keys and Schedule Service
 - Setting up custom fees, compliance operations, or airdrops
 - Subscribing to topic messages via mirror nodes
 - Gating downloads or APIs behind x402 HBAR payments on Hedera
@@ -173,6 +175,10 @@ Comprehensive guides for using Hedera native services with the Hiero JavaScript 
 **References included (HCS):**
 
 - `api-reference.md` - Hiero JS SDK API reference for HCS
+
+**References included (HSS):**
+
+- `api-reference.md` - Hiero JS SDK API reference for ScheduleCreateTransaction, ScheduleSignTransaction, ScheduleDeleteTransaction, ScheduleInfoQuery, and KeyList
 
 **References included (x402):**
 
@@ -312,6 +318,10 @@ hedera-skills/
 │   │       │   └── references/
 │   │       ├── hedera-consensus-service/
 │   │       │   ├── SKILL.md
+│   │       │   └── references/
+│   │       ├── hedera-schedule-service/
+│   │       │   ├── SKILL.md
+│   │       │   ├── evals/
 │   │       │   └── references/
 │   │       └── x402-payments/
 │   │           ├── SKILL.md

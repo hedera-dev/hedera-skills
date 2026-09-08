@@ -1,0 +1,100 @@
+{
+  "skill_name": "hedera-schedule-service",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need a treasury account that requires 2 of 3 approvers to release funds. Set it up so any two of three specific keys can authorize a transfer, then schedule a 500 HBAR payout from that treasury that only executes once two of the three have signed. Use @hiero-ledger/sdk.",
+      "expected_output": "A complete script that creates a 2-of-3 threshold KeyList, creates an account owned by it, and schedules a transfer requiring two of the three signatures before it executes.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-correct-import",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Imports from the correct package"
+        },
+        {
+          "name": "creates-threshold-keylist",
+          "type": "regex",
+          "value": "new KeyList\\(",
+          "description": "Uses the KeyList constructor (not KeyList.of, which has no threshold) since a threshold below the full key count is required",
+          "rubric": "The output constructs a KeyList with an explicit threshold argument, not KeyList.of(...) which requires every key"
+        },
+        {
+          "name": "threshold-is-two",
+          "type": "regex",
+          "value": ",\\s*2\\s*\\)",
+          "description": "Sets the threshold to 2",
+          "rubric": "The KeyList threshold is set to 2, matching the 2-of-3 requirement"
+        },
+        {
+          "name": "creates-multisig-account",
+          "type": "contains",
+          "value": "AccountCreateTransaction",
+          "description": "Creates a real account owned by the threshold key"
+        },
+        {
+          "name": "uses-public-keys-not-private",
+          "type": "regex",
+          "value": "\\.publicKey",
+          "description": "Passes public keys into the KeyList, not private keys",
+          "rubric": "The KeyList is built from .publicKey values, not raw PrivateKey objects — passing private keys into a KeyList is a real, silent bug this skill documents"
+        },
+        {
+          "name": "schedules-the-transfer",
+          "type": "contains",
+          "value": "ScheduleCreateTransaction",
+          "description": "Wraps the transfer in a schedule instead of executing it directly"
+        },
+        {
+          "name": "sets-scheduled-transaction",
+          "type": "contains",
+          "value": "setScheduledTransaction",
+          "description": "Attaches the actual TransferTransaction to the schedule"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "After creating a scheduled transaction, write the code to check whether it has executed yet and log the result. Use @hiero-ledger/sdk and ScheduleInfoQuery.",
+      "expected_output": "Code that queries ScheduleInfo and correctly checks execution status, aware that the executed field is nullable rather than boolean.",
+      "files": [],
+      "checks": [
+        {
+          "name": "uses-schedule-info-query",
+          "type": "contains",
+          "value": "ScheduleInfoQuery",
+          "description": "Uses ScheduleInfoQuery to check status"
+        },
+        {
+          "name": "checks-truthiness-or-null",
+          "type": "regex",
+          "value": "\\.executed\\s*(!=|!==)?\\s*null|if\\s*\\(\\s*\\w+\\.executed\\s*\\)",
+          "description": "Checks executed via truthiness or explicit null comparison, never a strict-equals-true comparison",
+          "rubric": "The output checks `.executed` truthiness (e.g. `if (info.executed)`) or compares explicitly against null — never `.executed === true`, since ScheduleInfo.executed is null-or-Timestamp, never a literal boolean, and that comparison silently never matches even after real execution"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Schedule a payment that should be cancellable by the treasury admin if it's not approved within a week, and make sure it doesn't just silently disappear if nobody signs in time. Use @hiero-ledger/sdk.",
+      "expected_output": "A schedule created with an admin key (so it can be explicitly deleted) and either an appropriate expirationTime or waitForExpiry(true) so the pending approval isn't lost to a default expiration.",
+      "files": [],
+      "checks": [
+        {
+          "name": "sets-admin-key",
+          "type": "contains",
+          "value": "setAdminKey",
+          "description": "Sets an admin key so the schedule can be explicitly deleted/cancelled"
+        },
+        {
+          "name": "addresses-expiration",
+          "type": "regex",
+          "value": "setExpirationTime|setWaitForExpiry",
+          "description": "Explicitly handles expiration behavior rather than relying on undocumented defaults",
+          "rubric": "The output either sets an explicit expirationTime for the one-week window, or sets waitForExpiry(true) so a slow-to-sign schedule isn't deleted early — addressing the 'expiration is real, not just documentation' pitfall this skill documents"
+        }
+      ]
+    }
+  ]
+}
