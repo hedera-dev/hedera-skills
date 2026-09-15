@@ -100,9 +100,11 @@ const result = await provider.call({ to: quoterEvmAddress, data: encodedCalldata
 
 ## Hedera Agent Kit plugin
 
-npm: `saucer-swap-plugin` (v0.2.0) — "SaucerSwap plugin for Hedera Agent Kit".
+Published package checked 2026-09-15: [`saucer-swap-plugin@0.3.1`](https://www.npmjs.com/package/saucer-swap-plugin/v/0.3.1), targeting `@hashgraph/hedera-agent-kit` v4.
 
-- Tools: `get_swap_quote_v2_tool` (`tokenIn`, `tokenOut`, `amountIn`), `swap_v2_tool` (`tokenIn`, `tokenOut`, `amountIn`, optional `recipientAddress`)
-- Env: `SAUCERSWAP_API_KEY`, `ACCOUNT_ID`, `PRIVATE_KEY` (ECDSA)
-- Network selection is automatic from the Hedera client's ledger id (mainnet/testnet); router, factory, quoter, and WHBAR addresses are pre-configured in the plugin.
-- Works with `HederaAIToolkit` and `HederaLangchainToolkit`; supports `RETURN_BYTES` (wallet signs — recommended) and `AUTONOMOUS` modes.
+- Read tools: `list_saucerswap_tokens_tool`, `find_saucerswap_token_tool`, `list_saucerswap_pools_tool`, and `get_swap_quote_v2_tool` (`tokenIn`, `tokenOut`, `amountIn` in display units).
+- Discovery and quotes require `SAUCERSWAP_API_KEY`. They do not need a signing key.
+- `swap_v2_tool` exists, but this release builds swaps with `amountOutMinimum: 0` and offers no slippage/minimum-output input. Do not use it for execution under this skill. Wallet signing and `RETURN_BYTES` do not change that transaction constraint.
+- For execution, use the documented direct SwapRouter flow with a fresh quote, the user's approved slippage tolerance, and a nonzero `amountOutMinimum`.
+- Network selection follows the Hedera client's ledger id (mainnet/testnet); router, factory, quoter, and WHBAR addresses are pre-configured in the plugin.
+- This published release does not include V3 orderbook tools. The separate V3 skill uses the Orderbook API directly.

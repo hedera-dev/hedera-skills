@@ -39,27 +39,18 @@ Worked TypeScript examples for both transports: `https://docs.saucerswap.finance
 
 ## Execution
 
-### Option A — Hedera Agent Kit plugin (recommended for agents)
+### Option A — Hedera Agent Kit plugin for discovery and quotes
 
-The official npm package [`saucer-swap-plugin`](https://www.npmjs.com/package/saucer-swap-plugin) (v0.2.0) plugs into `hedera-agent-kit` and exposes:
+The published [`saucer-swap-plugin@0.3.1`](https://www.npmjs.com/package/saucer-swap-plugin/v/0.3.1) provides these read tools:
 
-- **`get_swap_quote_v2_tool`** — `tokenIn`, `tokenOut`, `amountIn` → estimated output and rate
-- **`swap_v2_tool`** — `tokenIn`, `tokenOut`, `amountIn`, optional `recipientAddress` → executes the swap
+- **`list_saucerswap_tokens_tool`** — list tradable tokens, with optional search and limit
+- **`find_saucerswap_token_tool`** — resolve a symbol, name, token id, or EVM address; ask the user when ambiguous
+- **`list_saucerswap_pools_tool`** — list pools, optionally filtered by token
+- **`get_swap_quote_v2_tool`** — `tokenIn`, `tokenOut`, `amountIn` in display units → indicative output and rate
 
-```typescript
-import { HederaAIToolkit, AgentMode } from 'hedera-agent-kit'
-import { saucerSwapPlugin } from 'saucer-swap-plugin'
+The package also exposes `swap_v2_tool`, but version 0.3.1 sets `amountOutMinimum` to `0` and has no slippage or minimum-output parameter. **Do not use that tool to execute swaps under this skill.** A prior quote, wallet approval, or `RETURN_BYTES` mode does not add an on-chain minimum-output constraint. Use the direct router flow below with the user's approved slippage limit.
 
-const toolkit = new HederaAIToolkit({
-  client,
-  configuration: {
-    plugins: [saucerSwapPlugin],
-    context: { mode: AgentMode.RETURN_BYTES },
-  },
-})
-```
-
-Required environment: `SAUCERSWAP_API_KEY` (Data API key), `ACCOUNT_ID`, `PRIVATE_KEY` (ECDSA). Prefer **`RETURN_BYTES` mode**: the toolkit returns unsigned transaction bytes and the user's wallet signs — the agent process never holds signing authority. Use `AUTONOMOUS` mode only for a dedicated bot account with explicit user opt-in.
+The package targets `@hashgraph/hedera-agent-kit` v4. Keep plugin setup and network selection aligned with that installed version. Discovery and quotes use `SAUCERSWAP_API_KEY`; do not request a private key for these read operations. This npm release has no V3 orderbook tools; use the separate `saucerswap-v3-orderbook` skill for that API.
 
 ### Option B — Direct SwapRouter calls
 
