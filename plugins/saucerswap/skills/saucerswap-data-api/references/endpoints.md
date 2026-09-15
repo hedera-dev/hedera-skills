@@ -88,8 +88,8 @@ Active yield farms.
 | ---------------- | ------- | ------------------------------------------- |
 | `id`             | integer | SaucerSwap farm id                          |
 | `poolId`         | integer | Underlying pool id                          |
-| `sauceEmissions` | number  | SAUCE emitted per second to the pool        |
-| `hbarEmissions`  | number  | HBAR emitted per second to the pool         |
+| `sauceEmissions` | number  | Whole SAUCE allocated to the farm per minute (divide by 60 for per second); excludes the Masterchef devcut |
+| `hbarEmissions`  | number  | Whole HBAR allocated to the farm per minute, when the farm has HBAR funding (divide by 60 for per second) |
 | `totalStaked`    | string  | Total LP staked, smallest unit              |
 
 Related page: `farms/account` (LP amounts in farms by account id).

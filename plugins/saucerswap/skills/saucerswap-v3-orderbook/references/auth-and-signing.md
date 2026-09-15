@@ -19,14 +19,14 @@ The challenge and verify endpoints are the only always-unauthenticated calls. Ev
 
 ### JWT lifecycle
 
-- Tokens last about **6 hours** — treat them as short-lived.
+- Tokens are **short-lived** (the API does not publish an exact lifetime).
 - Re-authenticate on any `401` and before every WebSocket reconnect.
 - WebSocket JWTs are verified at handshake time; an open connection can outlive its token, but a reconnect needs a fresh one.
 - Store JWTs server-side only; never log them (they appear in WS query strings).
 
 ## Order signing (EIP-712)
 
-Orders are signed client-side — private keys never travel to the API. This mirrors the Hedera hosted-MCP `RETURN_BYTES` philosophy: the server builds, the client signs.
+Orders are signed client-side — private keys never travel to the API. This mirrors Hedera Agent Kit's `RETURN_BYTES` mode: the server builds, the client signs.
 
 1. Fetch and cache the domain: `GET /signature/domain` → `{ name, version, chainId, verifyingContract }`. `verifyingContract` is the reactor contract; `chainId` identifies the Hedera network.
 2. Build orders via `POST /orders/build`; the server assigns nonces and returns the serialized order structs.

@@ -46,7 +46,7 @@ Full bid/ask snapshot: `{ orderbookId, timestamp, baseTokenId, quoteTokenId, bes
 
 ### GET /trades/:orderbookId — trade tape (public)
 
-Query params: `sort`, `page`, `limit` (`limit` must be a positive integer — `400` otherwise). Response envelope: `{ orderbookId, timestamp, trades: Trade[], total, page, limit }`. The tape stays available for closed books.
+Query params: `sort`, `page`, `limit`. An invalid `sort` or a negative `page`/`limit` returns `400`; zero and non-numeric values fall back to the defaults. Response envelope: `{ orderbookId, timestamp, trades: Trade[], total, page, limit }`. The tape stays available for closed books.
 
 ```typescript
 interface Trade {
@@ -91,7 +91,7 @@ Request body: an array of order requests. The server assigns nonces and returns 
 | `inputToken`   | `string`            | Yes        | EVM address of the token being sold                     |
 | `inputAmount`  | `string`            | Yes        | Raw amount, smallest units                              |
 | `outputToken`  | `string`            | Yes        | EVM address of the token being bought                   |
-| `outputAmount` | `string`            | Yes        | Minimum raw output. Use `"1"` for market orders.        |
+| `outputAmount` | `string`            | Yes        | Minimum raw output. For an exact-input market order use the quote's `suggestedOutputAmount`; for exact output use `snappedOutputAmount`. Never `"1"`: that removes price protection. |
 | `recipient`    | `string`            | No         | Output recipient EVM address                            |
 | `makerOnly`    | `boolean`           | No         | Restrict order to maker fills                           |
 | `takerOnce`    | `boolean`           | No         | Allow only one taker fill                               |

@@ -53,7 +53,7 @@ Details and shapes: `references/quotes-and-trades.md`, `references/endpoints.md`
    - `0x...` EVM accounts (ECDSA only): standard `personal_sign` (EIP-191)
 3. `POST /auth/verify` with `{ "accountId", "signature" }` → `{ "token": "<jwt>" }`
 
-JWTs last about 6 hours — treat them as short-lived and re-authenticate on any `401`. Full flow and key-type matrix: `references/auth-and-signing.md`.
+JWTs are short-lived: re-authenticate on any `401` and before each WebSocket reconnect. Full flow and key-type matrix: `references/auth-and-signing.md`.
 
 ## Place Orders (build → sign → save)
 
