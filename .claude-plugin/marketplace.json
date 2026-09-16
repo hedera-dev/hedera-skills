@@ -118,6 +118,17 @@
         "validators",
         "playwright"
       ]
+    },
+    {
+      "name": "saucerswap",
+      "description": "SaucerSwap DeFi integration on Hedera — market data via the SaucerSwap REST API, V2 AMM swap quotes and execution, and V3 orderbook (CLOB) trading with EIP-712 signed orders",
+      "version": "1.0.0",
+      "author": {
+        "name": "SaucerSwap Labs"
+      },
+      "source": "./plugins/saucerswap",
+      "category": "development",
+      "keywords": ["hedera", "saucerswap", "defi", "dex", "swap", "amm", "orderbook", "clob", "trading", "market-data", "eip-712"]
     }
   ]
 }

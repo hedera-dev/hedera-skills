@@ -19,6 +19,7 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin install hackathon-helper
 /plugin install hedera-harness
 /plugin install dev-intelligence
+/plugin install saucerswap
 ```
 
 ### Other Agents (npx skills)
@@ -254,6 +255,38 @@ AI development workflow toolkit — session continuity, quality gates, project s
 
 - PostToolUse (Edit/Write) — Auto-runs stack-appropriate linter/type-checker after every edit
 
+### saucerswap
+
+DeFi integration skills for [SaucerSwap](https://www.saucerswap.finance), the leading decentralized exchange on Hedera — the marketplace's first DeFi plugin. Covers the three integration surfaces an agent needs: read-only market data, V2 AMM swaps, and V3 orderbook (CLOB) trading. Read-only by default: swap execution and order placement happen only on explicit user opt-in, testnet first, with client-side EIP-712 signing so private keys never leave the user's machine.
+
+**Skills included:**
+
+- **saucerswap-data-api** — REST market data (`api.saucerswap.finance`, `x-api-key`): token prices and decimals, platform stats, V1/V2 pools, farms, monthly quota headers, and agent-friendly docs discovery via `llms.txt`.
+- **saucerswap-v2-swaps** — Gas-free swap quotes from QuoterV2 via `eth_call` (`quoteExactInput`/`quoteExactOutput`, path encoding), and execution via the official Hedera Agent Kit `saucer-swap-plugin` or direct SwapRouter calls.
+- **saucerswap-v3-orderbook** — CLOB trading on the Orderbook API: public books/depth/trades/quotes, wallet-challenge JWT auth, build → EIP-712 sign → save order flow, asynchronous cancellations, and depth / user-event WebSockets.
+
+**Use when:**
+
+- Fetching SaucerSwap prices, TVL, pool, or farm data on Hedera
+- Quoting or executing token swaps on the SaucerSwap V2 AMM
+- Building trading bots, market makers, or dashboards on the SaucerSwap V3 orderbook
+- Wiring SaucerSwap into a Hedera Agent Kit agent
+
+**References included (Data API):**
+
+- `endpoints.md` - Response schemas for the core endpoints (tokens, stats, pools, farms)
+
+**References included (V2 swaps):**
+
+- `contracts.md` - Contract deployments, path/fee encoding, quote transports, Agent Kit env
+
+**References included (V3 orderbook):**
+
+- `endpoints.md` - Full REST endpoint reference, order fields, policy limits, errors
+- `auth-and-signing.md` - Challenge/verify flow, key types, EIP-712 signing, signature modes
+- `quotes-and-trades.md` - Quote endpoints, trade tape, quote-to-order flow
+- `websockets.md` - Depth and user-event streams, reconnect discipline
+
 ## Marketplace Structure
 
 ```
@@ -331,20 +364,31 @@ hedera-skills/
 │   │           ├── SKILL.md
 │   │           ├── evals/
 │   │           └── references/
-│   └── dev-intelligence/     # Dev workflow intelligence
-│       ├── skills/
-│       │   ├── session-management/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   ├── quality-gates/
-│       │   │   ├── SKILL.md
-│       │   │   └── references/
-│       │   └── project-scaffolding/
-│       │       ├── SKILL.md
-│       │       └── references/
-│       ├── commands/
-│       ├── hooks/
-│       └── scripts/
+│   ├── dev-intelligence/     # Dev workflow intelligence
+│   │   ├── skills/
+│   │   │   ├── session-management/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   ├── quality-gates/
+│   │   │   │   ├── SKILL.md
+│   │   │   │   └── references/
+│   │   │   └── project-scaffolding/
+│   │   │       ├── SKILL.md
+│   │   │       └── references/
+│   │   ├── commands/
+│   │   ├── hooks/
+│   │   └── scripts/
+│   └── saucerswap/           # SaucerSwap DeFi (market data, V2 swaps, V3 orderbook)
+│       └── skills/
+│           ├── saucerswap-data-api/
+│           │   ├── SKILL.md
+│           │   └── references/
+│           ├── saucerswap-v2-swaps/
+│           │   ├── SKILL.md
+│           │   └── references/
+│           └── saucerswap-v3-orderbook/
+│               ├── SKILL.md
+│               └── references/
 └── README.md
 ```
 
