@@ -8,6 +8,17 @@
   },
   "plugins": [
     {
+      "name": "hedera-docs",
+      "description": "Navigate the official Hedera documentation at docs.hedera.com — index routing, markdown fetch protocol, and the stale-training-data traps that produce wrong Hedera code",
+      "version": "1.0.0",
+      "author": {
+        "name": "Hedera Dev"
+      },
+      "source": "./plugins/hedera-docs",
+      "category": "development",
+      "keywords": ["hedera", "docs", "documentation", "llms-txt", "navigation", "reference", "mirror-node", "hiero-sdk"]
+    },
+    {
       "name": "agent-kit-plugin",
       "description": "Comprehensive guides for extending the Hedera Agent Kit: creating BaseTool plugins, writing observation hooks, and writing blocking policies",
       "version": "2.0.0",

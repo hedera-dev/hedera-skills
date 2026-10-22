@@ -11,6 +11,7 @@ A marketplace of plugins and skills for AI coding agents. Includes Hedera-specif
 /plugin marketplace add hedera-dev/hedera-skills
 
 # Install individual plugins
+/plugin install hedera-docs
 /plugin install agent-kit-plugin
 /plugin install system-contracts
 /plugin install oracles
@@ -30,6 +31,36 @@ npx skills add hedera-dev/hedera-skills
 Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
 
 ## Available Plugins
+
+### hedera-docs
+
+Navigation layer for the official Hedera documentation at `docs.hedera.com` (605 pages). Teaches agents to read from the docs' machine-readable indexes instead of from training data, which is where almost every wrong Hedera answer comes from.
+
+**Skills included:**
+
+- **hedera-docs** — Index routing across the nine docs namespaces, the markdown fetch protocol, the native-vs-EVM path decision, and the stale-training-data traps.
+
+**Use when:**
+
+- Answering any Hedera question that must be correct and citable
+- Writing Hedera code in JavaScript, Java, Go, Python, or Solidity
+- Looking up an SDK signature, a mirror node endpoint, or a protobuf message
+- Deciding between the native SDK path and the EVM path
+- Resolving or verifying a `docs.hedera.com` link
+
+**What it knows that an agent does not:**
+
+- `llms.txt` is only the top-level index — the 449 SDK and API reference pages live in three separate `_llms/` indexes, so an agent that fetches `llms.txt` alone concludes they do not exist
+- Appending `.md` to any page URL returns clean markdown
+- A missing page returns **HTTP 200** with a `# Page Not Found` body, so status codes cannot be trusted
+- `llms-full.txt` is 4.6 MB and never worth fetching whole
+- JavaScript imports from `@hiero-ledger/sdk`, while Java keeps `com.hedera.hashgraph:sdk`
+- `AccountBalanceQuery` is superseded by `MirrorNodeAccountBalanceQuery`
+- Which of the nine namespaces owns a topic when it appears in four of them
+
+**References included:**
+
+- `navigation-map.md` — Intent-to-namespace routing, cross-namespace disambiguation for tokens, accounts, contracts, consensus, schedules, fees, mirror nodes, JSON-RPC and local dev, plus the `reference/` vs `api-reference/` split
 
 ### agent-kit-plugin
 
@@ -261,6 +292,12 @@ hedera-skills/
 ├── .claude-plugin/
 │   └── marketplace.json      # Marketplace manifest
 ├── plugins/
+│   ├── hedera-docs/          # Hedera documentation navigation
+│   │   └── skills/
+│   │       └── hedera-docs/
+│   │           ├── SKILL.md
+│   │           ├── evals/
+│   │           └── references/
 │   ├── agent-kit-plugin/     # Agent Kit plugin development
 │   │   └── skills/
 │   │       └── agent-kit-plugin/

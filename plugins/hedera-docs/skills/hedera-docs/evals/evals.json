@@ -1,0 +1,197 @@
+{
+  "skill_name": "hedera-docs",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Which page of the Hedera docs documents minting an NFT with the JavaScript SDK? Give me the URL, the transaction class, and the package to import from.",
+      "expected_output": "Routes to the native/ namespace via the native-sdks index, cites docs.hedera.com/native/tokens/mint.md, names TokenMintTransaction, and gives @hiero-ledger/sdk as the import.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "cites-native-mint-page",
+          "type": "contains",
+          "value": "native/tokens/mint",
+          "description": "Cites the correct page under the native namespace"
+        },
+        {
+          "name": "names-transaction-class",
+          "type": "contains",
+          "value": "TokenMintTransaction",
+          "description": "Names the correct SDK transaction class"
+        },
+        {
+          "name": "uses-hiero-package",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Gives the current package name rather than the former @hashgraph/sdk"
+        },
+        {
+          "name": "fetches-markdown-form",
+          "type": "regex",
+          "value": "docs\\.hedera\\.com/[^\\s)]*\\.md",
+          "description": "Uses the .md form of a docs URL"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I need to list every NFT owned by a Hedera account by querying indexed history, not by SDK query. Which docs pages cover this and what is the endpoint?",
+      "expected_output": "Routes to the reference index, reaches the mirror node REST guide and the generated endpoint page for NFTs by account.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "routes-to-mirror-node-rest",
+          "type": "regex",
+          "value": "reference/rest-api|mirror node REST",
+          "description": "Identifies the mirror node REST API as the right surface"
+        },
+        {
+          "name": "cites-generated-endpoint-page",
+          "type": "contains",
+          "value": "api-reference/accounts/get-nfts-for-an-account-info",
+          "description": "Reaches the generated per-endpoint page, not just the guide"
+        },
+        {
+          "name": "names-endpoint-path",
+          "type": "regex",
+          "value": "/api/v1/accounts/[^\\s]*nfts",
+          "description": "Gives the actual REST endpoint path"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want to create an HTS fungible token from inside a Solidity contract on Hedera. Point me at the right docs.",
+      "expected_output": "Recognizes this as the EVM path despite HTS being a native service, routes to evm/hedera-services, and names the HTS system contract address.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "routes-to-evm-namespace",
+          "type": "contains",
+          "value": "evm/hedera-services",
+          "description": "Routes to the EVM path, not native/tokens"
+        },
+        {
+          "name": "names-system-contract",
+          "type": "regex",
+          "value": "system.contract|0x167",
+          "description": "Identifies the HTS system contract as the mechanism"
+        },
+        {
+          "name": "cites-evm-index",
+          "type": "regex",
+          "value": "evm-developers\\.txt|_llms/evm",
+          "description": "Reached the page through the EVM developers index"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Write the minimal JavaScript to read an account's HBAR balance on Hedera testnet. Use whatever the current docs say, not what you remember.",
+      "expected_output": "Uses MirrorNodeAccountBalanceQuery from @hiero-ledger/sdk and notes it replaces the deprecated AccountBalanceQuery.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses-mirror-node-balance-query",
+          "type": "contains",
+          "value": "MirrorNodeAccountBalanceQuery",
+          "description": "Uses the current balance query rather than the deprecated AccountBalanceQuery"
+        },
+        {
+          "name": "uses-hiero-package",
+          "type": "contains",
+          "value": "@hiero-ledger/sdk",
+          "description": "Imports from the current package"
+        },
+        {
+          "name": "cites-balance-page",
+          "type": "contains",
+          "value": "native/accounts/get-balance",
+          "description": "Cites the page it verified against"
+        },
+        {
+          "name": "lowercase-network-name",
+          "type": "regex",
+          "value": "testnet",
+          "description": "Writes the network name in lowercase per the docs style rule"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "List all the Hedera docs pages that cover scheduled transactions, across every part of the docs.",
+      "expected_output": "Uses more than one index, since scheduled transactions span learn/, native/, evm/ (HSS), and reference/.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "finds-native-scheduled",
+          "type": "contains",
+          "value": "native/scheduled",
+          "description": "Finds the SDK section"
+        },
+        {
+          "name": "finds-concept-page",
+          "type": "contains",
+          "value": "learn/core-concepts/transactions/scheduled",
+          "description": "Finds the concept page"
+        },
+        {
+          "name": "finds-hss-system-contract",
+          "type": "contains",
+          "value": "schedule-service",
+          "description": "Finds the Hedera Schedule Service system contract page in the EVM namespace"
+        },
+        {
+          "name": "finds-rest-schedules",
+          "type": "regex",
+          "value": "rest-api/schedules|api-reference/schedules",
+          "description": "Finds the mirror node schedule endpoints"
+        },
+        {
+          "name": "consults-native-index",
+          "type": "contains",
+          "value": "native-sdks.txt",
+          "description": "Consulted the native SDK index, which llms.txt does not cover"
+        },
+        {
+          "name": "consults-evm-index",
+          "type": "contains",
+          "value": "evm-developers.txt",
+          "description": "Consulted the EVM index rather than assuming llms.txt is complete"
+        },
+        {
+          "name": "consults-reference-index",
+          "type": "contains",
+          "value": "reference.txt",
+          "description": "Consulted the reference index for the mirror node endpoints"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Is Hedera a blockchain? Answer the way the official docs do and cite the page.",
+      "expected_output": "States that Hedera is a public proof-of-stake distributed ledger using hashgraph consensus, not a blockchain, and cites a learn/ page.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "says-distributed-ledger",
+          "type": "contains",
+          "value": "distributed ledger",
+          "description": "Uses the docs' own term"
+        },
+        {
+          "name": "names-hashgraph-consensus",
+          "type": "contains",
+          "value": "hashgraph",
+          "description": "Names hashgraph consensus as the distinguishing mechanism"
+        },
+        {
+          "name": "cites-learn-page",
+          "type": "contains",
+          "value": "learn/getting-started/what-is-hedera",
+          "description": "Cites the authoritative page"
+        }
+      ]
+    }
+  ]
+}
