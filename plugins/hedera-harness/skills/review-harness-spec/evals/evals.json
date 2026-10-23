@@ -3,63 +3,67 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "Review this harness recipe. .harness/spec.yaml is schemaVersion 3 with name: proof-wall and sets eval: .harness/eval.json but has no validator block. The command validator has a command named setup instead of install, and .harness/prd.md contains a line saying 'E2 must pass: the feed renders'.",
-      "expected_output": "A two-axis report that keeps Wiring and Eval separate, flags the EVALUATE pairing gap (eval without validator.enabled), the missing install command name, and the blind violation from the assertion id leaking into the PRD.",
+      "prompt": "Review this harness spec at specs/wall.md: '# Proof wall. The feed uses React Query with a 10 second staleTime. The post button is disabled until a wallet connects. The feed never shows undefined. Posting increases the account balance by the fee.' harness.yaml is committed.",
+      "expected_output": "A two-axis report keeping Checkability and Scope separate, bucketing each claim, flagging the React Query claim as unjudgeable, and giving rewrites for the disabled-state, negative and delta claims.",
       "files": [],
       "assertions": [
-        "The output satisfies: Report contains a Wiring axis",
-        "The output satisfies: Report contains an Eval axis",
-        "The output satisfies: Flags eval present but validator.enabled missing",
-        "The output satisfies: Flags the command validator missing an install-named command",
-        "The output satisfies: Flags the assertion id leaking into the PRD",
-        "The output satisfies: Uses the mechanical checker for the Wiring axis"
+        "The output satisfies: Report contains a Checkability axis",
+        "The output satisfies: Report contains a Scope axis",
+        "The output satisfies: Flags the React Query/staleTime claim as unjudgeable, not merely vague",
+        "The output satisfies: Flags that a disabled control cannot be read from element text",
+        "The output satisfies: Flags the never-shows-undefined claim as a negative expectation",
+        "The output satisfies: Flags the balance-increase claim as a delta, so judgement rather than a check",
+        "The output satisfies: Gives the rewrite, not only the objection"
       ]
     },
     {
       "id": 1,
-      "prompt": "Audit whether this harness recipe is safe to enable chainValidation. The recipe has eval + validator.enabled, chainValidation.enabled true, network: mainnet, and the Playwright smoke asserts twelve pieces of UI copy across six routes.",
-      "expected_output": "Flags mainnet as rejected by the loader, notes that the Playwright stage is too thick and deep UX belongs in the evaluate checklist, and covers both axes.",
+      "prompt": "Review specs/status.md: '# Status page. The /status page shows the network name and the latest consensus timestamp. If the mirror node is down an error is shown.' harness.yaml is present.",
+      "expected_output": "Flags that no element has an id, so claims the author likely wanted as machine checks will fall to judgement, and recommends concrete selectors.",
       "files": [],
       "assertions": [
-        "The output satisfies: Report keeps both axes",
-        "The output satisfies: Flags network: mainnet as invalid",
-        "The output includes executableWithTestSigner: Ties chainValidation to executable assertions",
-        "The output satisfies: Flags an over-stuffed Playwright stage"
+        "The output satisfies: Flags the absent element ids",
+        "The output satisfies: Explains that the claim becomes judgement rather than a check",
+        "The output satisfies: Recommends a concrete selector",
+        "The output satisfies: Notes the spec never says what is out of scope"
       ]
     },
     {
       "id": 2,
-      "prompt": "Check this recipe: .harness/spec.yaml still has a skills: list with hedera-consensus-service and create-harness-spec. Also the PRD has three journeys but .harness/eval.json only has one assertion.",
-      "expected_output": "Flags that skills: was removed and hard-fails at load (do not keep the domain skill in the recipe either), and flags that two PRD journeys are ungraded.",
+      "prompt": "Review specs/everything.md — it asks for a mirror-node data layer with caching, then a dashboard UI with four charts, then wallet-gated token transfers with an approval flow, then an admin page. harness.yaml is present and valid.",
+      "expected_output": "Reports the spec as more than one run's work on the Scope axis and recommends splitting it into a sequence of specs run with --continue.",
       "files": [],
       "assertions": [
-        "The output satisfies: Flags that skills: is removed from the recipe",
-        "The output satisfies: Rejects the authoring skill as a generator skill",
-        "The output satisfies: Flags journeys without checklist coverage"
+        "The output satisfies: Flags the spec as beyond one run",
+        "The output includes --continue: Recommends sequencing the specs with --continue",
+        "The output satisfies: Ties the recommendation to the attempt budget covering the whole spec",
+        "The output satisfies: Reports it under Scope rather than merging the axes",
+        "The output satisfies: Does not reach for the removed increments concept"
       ]
     },
     {
       "id": 3,
-      "prompt": "Review this recipe: .harness/spec.yaml has no schemaVersion, an extend.baseline block, a generator block with cursor CLI args, and logging paths under .harness/runs/.",
-      "expected_output": "Identifies a pre-v3 recipe, stops and recommends rewriting to schemaVersion 3 (migrate is gone), and notes that generator, logging and extend were removed with the agent preset replacing hand-written CLI flags.",
+      "prompt": "Review specs/feature.md. It is a clean markdown spec with ids and loading states. One thing though: it has no schemaVersion field, no PRD file, no evaluate checklist and no validators directory. Is that a problem?",
+      "expected_output": "Says plainly that none of those are findings in harness 3.x, because the recipe model is gone and the two inputs are harness.yaml and the markdown spec.",
       "files": [],
       "assertions": [
-        "The output satisfies: Identifies the recipe as pre-v3",
-        "The output satisfies: Does not treat migrate as the upgrade path",
-        "The output satisfies: Names keys removed from the current schema",
-        "The output satisfies: Explains that the agent preset replaces hand-written CLI flags"
+        "The output satisfies: States the absences are correct in 3.x rather than reporting them",
+        "The output satisfies: Names harness.yaml and the markdown spec as the only inputs",
+        "The output satisfies: Explains that the recipe model was removed",
+        "The output satisfies: Does not ask for a schemaVersion field to be added"
       ]
     },
     {
       "id": 4,
-      "prompt": "Review this recipe: schemaVersion 3, baseline with install, and it also sets maxAttempts: 3, prd: .harness/prd.md, validators.static: .harness/validators/static.json, and constraints.packageManager: yarn@3.2.3 which matches the project lockfile. Anything wrong?",
-      "expected_output": "Confirms the recipe is valid and runnable, but notes it is padded: every one of those keys restates a v3 default or a detected value, adding drift surface for no benefit. Recommends removing them.",
+      "prompt": "Review specs/send.md: '# Send HBAR. Once the send completes the transaction id appears in #tx-id. The new topic created by the app reaches sequence number 1. /send returns 200.' harness.yaml exists but has no serve command.",
+      "expected_output": "Flags the conditional claim and the claim anchored to an entity the run creates, confirms the route check is sound, and reports the missing serve command as a blocker.",
       "files": [],
       "assertions": [
-        "The output satisfies: Recognizes the recipe is not broken",
-        "The output satisfies: Flags keys that merely restate v3 defaults",
-        "The output satisfies: Names which keys are defaulted or detected",
-        "The output satisfies: Recommends removing the redundant keys"
+        "The output satisfies: Flags the once-completes claim as conditional",
+        "The output satisfies: Flags the claim anchored to a topic the run creates",
+        "The output satisfies: Recognises the route status claim as a sound check",
+        "The output satisfies: Reports the missing serve command",
+        "The output satisfies: Treats the missing serve command as a blocker, since it is required"
       ]
     }
   ]

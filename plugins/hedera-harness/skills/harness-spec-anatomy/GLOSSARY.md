@@ -1,78 +1,87 @@
 # Glossary
 
-Use these terms exactly. Do not substitute "pack", "benchmark pack",
-"acceptance file", or "oracle" when a glossary word fits.
+Use these terms exactly. The v1/v2 words — **recipe**, **recipe file**,
+**PRD**, **evaluate checklist**, **increment**, **needle**, **stage ambition**,
+**oracle** — name things harness 3.x does not have. Do not carry them over.
 
-> **Spec and recipe are the same thing.** The harness settled on **recipe** —
-> the CLI prints `✔ recipe`, and the upstream guide is
-> `docs/authoring-a-recipe.md`. These skills keep `spec` in their *names*
-> (`create-harness-spec`, `review-harness-spec`, `harness-spec-anatomy`) and in
-> the filename `.harness/spec.yaml`. Prefer **recipe** in prose.
+**Spec** — the markdown file describing one feature, at `specs/<name>.md`. The
+only thing `harness run` is pointed at (`--spec <path>`). Written in your own
+words; its one constraint is that what it asserts be checkable by a person
+using the running app. _Avoid_: recipe, pack, PRD.
 
-**Recipe** — the coupled set of files the harness consumes for one run: PRD,
-**recipe file**, static validator, command validator, and optionally a
-Playwright smoke plus an **evaluate checklist**. Lives under `.harness/` in the
-project. _Avoid_: pack, benchmark pack, spec pack.
+**harness.yaml** — the committed file at the repo root naming the four
+commands: `install`, `build`, `test` (nullable), `serve`. Describes the
+project, not a run, which is why it is committed and why its comments survive.
+Written by `init` or `wizard`; editable by hand.
 
-**Recipe file** — the YAML the CLI loads: `.harness/spec.yaml`. Carries
-`schemaVersion`, `name`, `description`, and `baseline`; everything else is
-defaulted. One file inside the **recipe**.
+**Check** — one claim DERIVE read out of the spec that a judge can settle by
+reading a value, with no judgement. Data, never code. Carries `kind`
+(`chain` / `http` / `dom`), `path`, `field`, one `expect`, and `because` — the
+quoted phrase in the spec it came from. Identified as
+`chain:accounts/0.0.2:balance.balance`.
 
-**schemaVersion** — the recipe format version. `3` is current. A recipe without
-the field, or with `1` / `2`, hard-fails at load. There is no `migrate`
-command: rewrite to v3 (or regenerate with `hedera-harness init` and reapply
-edits).
+**Expectation** — the one assertion inside a check: `equals`, `matches` (a
+JavaScript pattern, so no inline flags), `contains`, or `atLeast`. There is no
+delta form; a relative claim is judgement, not a check.
 
-**Slug** — the kebab-case feature name in the **recipe file** `name` field
-(`proof-wall`, `hcs-message-wall`). `templateMetadata.name`, when present, is
-the *host* template identity and may differ from the feature slug.
+**Judgement** — everything in the spec that is not a check. Not a lesser
+outcome: the evaluator verifies it, cites evidence, and stands behind it. Most
+of a good spec is judgement.
 
-**Run** — the CLI command (`hedera-harness run`). Operates on the project cwd,
-creates or continues a `harness/run-*` branch, then GENERATE → ASSERT → SMOKE →
-EVALUATE, repairing between attempts. Artifacts under `.harness/runs/`.
+**DOCTOR** — the first stage. Deterministic, no agent: git, a clean tree, the
+browser, the wallet, and that `harness.yaml` names commands that exist, then
+install/build/test on the untouched repo. Proves the project was healthy before
+the agent touched it, so pre-existing breakage is never charged to a generator
+attempt. A *stage*, not a command — `harness doctor` no longer exists.
 
-**Init** — bootstrap command (`hedera-harness init`) that seeds scaffold-hbar
-into a directory, creates a **fresh git repo** (no scaffold history/remote),
-and provisions `.harness/`.
+**DERIVE** — the stage that reads the spec, and only the spec, and writes the
+checks. Runs before anything is built so the app cannot shape them. `--review`
+stops here for confirmation.
 
-**Doctor** — preflight command (`hedera-harness doctor`). With `--recipe-only`
-it validates the **recipe file** alone — schema, defaults, baseline, network
-rules — and exits non-zero on failure. It is the authority on whether a recipe
-loads; do not re-implement its checks by hand.
+**GENERATE** — the stage where an agent implements the spec, choosing its own
+files and whether to write tests.
 
-**Baseline** — host-health commands run *before* generation, proving the project
-was already working. Must include a command literally named `install`, which is
-also used for install fingerprinting across attempts. Distinct from
-`validators.commands`, which grade the project *after* the feature lands.
+**TEST** — install, build, test, stopping at the first failure. No agent.
 
-**Agent preset** — the `agent:` field (`claude` or `cursor`) selecting how the
-generator and validator are invoked: CLI flags, model choice, and how Playwright
-MCP is delivered. Default is **claude**. Omit the key unless the user wants
-Cursor. Presets ship with the harness, so flag changes arrive with an upgrade
-instead of an edit to the recipe.
+**EVALUATE** — the stage where a second agent judges the running app against
+the spec, driving a real browser and reading the mirror node. It cannot see the
+code: it runs in a directory holding only the spec, with the repo denied at the
+sandbox. _Avoid_: validator, grader.
 
-**Increment** — one entry when `prd:` is a list. Increments deliver in order
-onto a single branch, each with its own attempt budget; the first failing
-increment stops the sequence. Pair with `eval:` 1:1 for per-increment grading.
+**Evaluator** / **judge** — the agent EVALUATE runs. Selected by
+`--judge-model`, which defaults to `--model`.
 
-**Blind** — the generation-integrity property. The PRD is given to the
-generator; the **evaluate checklist** grades the running app. Pasting assertion
-ids, `howToVerify`, or severity labels into the PRD destroys the property.
-Phrase the rule as: **keep the run blind**.
+**Verdict** — what the evaluator answered, written to
+`attempt-N/verdict.json` with its accounting of every check: both readings,
+whether it held, and the evidence for each. Not accepted until every item is
+accounted for. Never re-rolled — only the *absence* of an answer earns a
+second look.
 
-**Evaluate checklist** — the JSON the EVALUATE stage grades
-(`.harness/eval.json`, or one file per increment under `.harness/evals/`).
-Numbered assertions (`E1`, `E2`, …) — not the raw PRD. _Avoid_: oracle,
-acceptance contract, semantic contract. Those were the v2 names.
+**Evidence** — the screenshots, page snapshots and saved responses under
+`attempt-N/evidence/` that a claimed failure cites. The harness confirms the
+files exist before accepting the verdict.
 
-**Stage** — a validation step that can stop a run: ASSERT (deterministic),
-SMOKE (Playwright), EVALUATE (evaluate checklist), CHAIN (on-chain). Every
-enabled **stage** must pass. _Avoid_: gate, tier 0–1 / 2 / 3 / 3.5.
+**Finding** — one failure in a verdict, hashed to a stable id so the report can
+say open / fixed / new across attempts.
 
-**Finding** — one validation failure, carrying a stable id and a
-`status` of `open` or `fixed`. The repair loop reports the per-attempt delta
-(opened / fixed / introduced), so ids must stay stable across attempts.
+**Attempt** — one pass of GENERATE → TEST → EVALUATE, committed to the run's
+branch. Bounded by `--max-attempts` (default 3).
 
-**Needle** — a static text assertion (`textAssertions[].contains`) that pins a
-string the project must document (e.g. `yarn next:dev`). Prefer stable script
-names over incidental implementation detail.
+**Run** — one invocation of `harness run --spec <path>`. Writes
+`.harness/runs/<timestamp>/`, works on a `harness/<timestamp>` branch, and
+returns you to the branch you started on.
+
+**Baseline** — the install/build/test/serve output DOCTOR captured from the
+untouched repo, under `runs/<timestamp>/baseline/`. The comparison point for
+everything the agent then does.
+
+**Init** — `harness init`. Writes `harness.yaml` by asking four questions with
+defaults read from the project. Refuses if the file already exists.
+
+**Wizard** — `harness wizard [name]`. An agent reads the project and proposes
+the four commands with reasoning, then interviews you one question at a time
+and drafts `specs/<name>.md`. The path to take when there is no spec yet.
+
+**Continue** — `--continue`. Carries on from the last run started from, or
+made on, this branch: its work, and what it ended up failing on. Also how a
+second spec builds on a run that passed.

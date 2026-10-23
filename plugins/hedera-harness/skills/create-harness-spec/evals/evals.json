@@ -3,74 +3,68 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "I already scaffolded a Scaffold HBAR app (packages/nextjs present, yarn workspaces). Help me create an ASSERT-only hedera-harness recipe under .harness/ for an HCS proof-wall feature called proof-wall: users browse a public message wall without a wallet, and posting requires connecting a wallet. No Solidity.",
-      "expected_output": "A grilling session that asks one question at a time with a recommended answer, looks up project facts instead of asking, waits for shared understanding before writing files, then emits a minimal schemaVersion 3 recipe at .harness/spec.yaml with a baseline install command, plus .harness/prd.md and validators, leaving v3 defaults commented out and omitting skills:.",
+      "prompt": "I already scaffolded a Scaffold HBAR app (packages/nextjs present, yarn workspaces) and harness.yaml is committed. Help me create a hedera-harness spec for an HCS proof-wall feature called proof-wall: users browse a public message wall without a wallet, and posting requires connecting a wallet. No Solidity.",
+      "expected_output": "A grilling session that asks one question at a time with a recommended answer, looks up project facts instead of asking, pushes for element ids and loading/failure states, waits for shared understanding, then writes a markdown spec to specs/proof-wall.md and hands off with harness run --spec.",
       "files": [],
       "assertions": [
-        "The output satisfies: Follows grilling protocol: one question at a time / recommended answer",
+        "The output satisfies: Follows the grilling protocol: one question at a time with a recommendation",
         "The output satisfies: Does not write files until shared understanding is confirmed",
-        "The output includes schemaVersion: 3: Recipe declares schemaVersion 3",
-        "The output includes .harness/spec.yaml: Writes the recipe to the project-centric .harness/ path",
-        "The output satisfies: Baseline includes a command literally named install",
-        "The output satisfies: Leaves v3-defaulted plumbing out of the recipe rather than restating it",
-        "The output satisfies: Does not emit keys removed in schema v3 (seed, generator, logging, extend, contract, skills)",
-        "The output satisfies: Names HCS / product skill discovery without listing skills: in the recipe",
-        "The output satisfies: Keeps the run blind / separates PRD from evaluate checklist",
-        "The output satisfies: Names doctor and/or check-spec.sh as the completion criterion"
+        "The output satisfies: Writes the spec as markdown under specs/",
+        "The output satisfies: Pushes for concrete element ids so claims become machine checks",
+        "The output satisfies: Asks what shows while loading and when the request fails",
+        "The output includes harness run --spec: Hands off with the v3 run command",
+        "The output satisfies: Does not emit a schemaVersion recipe field, which harness 3.x does not read",
+        "The output satisfies: Does not write the removed .harness/spec.yaml recipe file",
+        "The output satisfies: Does not write a PRD, which harness 3.x has no concept of"
       ]
     },
     {
       "id": 1,
-      "prompt": "Deepen my existing proof-wall harness recipe to EVALUATE. Derive evaluate-checklist assertions from the PRD journeys (browse without wallet; wallet-gated post).",
-      "expected_output": "An evaluate checklist at .harness/eval.json with numbered E-prefixed assertions carrying statement and howToVerify, a fail-closed evaluationRules posture, both eval and validator.enabled set in the recipe, and a reminder that the PRD must stay blind.",
+      "prompt": "I want to use hedera-harness on my Next.js Hedera app but I honestly do not know what feature to build first or how to describe it. Where do I start?",
+      "expected_output": "Routes the user to harness wizard, which reads the project, proposes the four commands and interviews them into a spec, rather than grilling them from scratch in the conversation.",
       "files": [],
       "assertions": [
-        "The output satisfies: Uses stable numbered assertion ids (E1, E2, ...)",
-        "The output includes howToVerify: Assertions carry concrete browser verification steps",
-        "The output satisfies: Enables both eval and validator.enabled — either alone is misconfigured",
-        "The output uses the v3 default evaluate checklist path",
-        "The output satisfies: Evaluate checklist keeps a fail-closed posture",
-        "The output satisfies: Reminds the user not to leak checklist detail into the PRD",
-        "The output satisfies: Does not hand-write validator CLI flags or model names; the agent preset owns those"
+        "The output includes harness wizard: Routes to the built-in interviewer instead of hand-grilling",
+        "The output satisfies: Says what the wizard does: reads the project and interviews",
+        "The output satisfies: Suggests reviewing the drafted spec afterwards"
       ]
     },
     {
       "id": 2,
-      "prompt": "When should I enable chainValidation for my harness recipe, and what YAML fields do I need?",
-      "expected_output": "Explains that CHAIN is opt-in and requires EVALUATE, that network must be testnet, that an ECDSA operator is supplied through environment variables, and that assertions must be flagged executableWithTestSigner to actually transact.",
+      "prompt": "My project has a .harness/spec.yaml with schemaVersion 3, a prd.md and validators/static.json from when we used hedera-harness 1.2. I just upgraded to harness 3.0.1. Migrate my recipe to the new version.",
+      "expected_output": "Explains that harness 3.x does not read the recipe at all so there is nothing to migrate mechanically, and that the two v3 inputs are harness.yaml (written by init or wizard) and a markdown spec.",
       "files": [],
       "assertions": [
-        "The output includes chainValidation: Names the chainValidation block",
-        "The output satisfies: States the network must be testnet",
-        "The output satisfies: Operator credentials come from environment variables",
-        "The output satisfies: Calls out that the operator must be ECDSA, not ED25519",
-        "The output includes executableWithTestSigner: Links chainValidation to executableWithTestSigner assertions",
-        "The output satisfies: States that CHAIN depends on EVALUATE"
+        "The output satisfies: States that harness 3.x ignores the old recipe rather than migrating it",
+        "The output includes harness.yaml: Names the v3 config file",
+        "The output satisfies: Names the four commands harness.yaml carries",
+        "The output satisfies: Has init or wizard write harness.yaml rather than hand-writing it",
+        "The output satisfies: Does not invent a migrate command"
       ]
     },
     {
       "id": 3,
-      "prompt": "My .harness/spec.yaml has an extend.baseline block, a contract: key, and no schemaVersion. I want to add a new page to the recipe — can you edit it for me?",
-      "expected_output": "Recognizes a pre-v3 recipe, declines to treat it as loadable, explains that hedera-harness migrate is gone, and recommends rewriting to schemaVersion 3 (extend.baseline → baseline, contract: → eval:) or regenerating with init.",
+      "prompt": "Write me a harness spec for a balance widget. Requirements: the hook polls the mirror node every 10 seconds, the component is memoised so it never re-renders unnecessarily, and the balance never shows undefined.",
+      "expected_output": "Converts each unobservable claim into something a judge that cannot see the code could check: an update cadence observed in the browser, and what the element actually displays instead of a negative claim.",
       "files": [],
       "assertions": [
-        "The output satisfies: Identifies the recipe as predating schema v3",
-        "The output satisfies: Does not recommend the removed migrate command as the path forward",
-        "The output satisfies: Explains extend.baseline → baseline and contract → eval"
+        "The output satisfies: Identifies that implementation claims cannot be judged",
+        "The output satisfies: Converts the polling claim into an observable update cadence",
+        "The output satisfies: Replaces the never-shows-undefined claim with what the element does show",
+        "The output satisfies: Addresses the memoisation claim rather than silently passing it through",
+        "The output satisfies: Gives the displayed value a concrete element id"
       ]
     },
     {
       "id": 4,
-      "prompt": "I want the harness to build a whole HTS subscription feature: the token service layer, a management UI, and wallet-gated mint flows. Should that be one PRD or several?",
-      "expected_output": "Weighs a single PRD against ordered increments, recommends splitting only because this spans layers, explains that prd accepts a list delivered in order onto one branch, that each increment must leave the app green, and that eval: should be listed 1:1 with prd: so each slice is graded against its own checklist.",
+      "prompt": "Here is my feature idea for harness: a /status page showing the network name in #network-name. My repo has no harness.yaml yet. Write the spec and whatever config is needed.",
+      "expected_output": "Writes the markdown spec but has harness init or wizard produce harness.yaml rather than hand-writing it, and notes the clean-tree and package.json requirements DOCTOR enforces.",
       "files": [],
       "assertions": [
-        "The output satisfies: Explains that prd can be an ordered list of increments",
-        "The output satisfies: Each increment must leave the app green on its own",
-        "The output satisfies: A failing increment stops the sequence",
-        "The output satisfies: Orders increments by dependency, not size",
-        "The output satisfies: Increments deliver onto a single branch",
-        "The output satisfies: Pairs eval: 1:1 with prd: for per-increment grading"
+        "The output satisfies: Has init or wizard write harness.yaml",
+        "The output satisfies: Says why init should write it: it reads the project and commits the file",
+        "The output satisfies: Still writes the markdown spec",
+        "The output satisfies: Flags the preconditions DOCTOR enforces before a run"
       ]
     }
   ]

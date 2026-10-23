@@ -3,167 +3,191 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "Review this harness recipe. .harness/spec.yaml is schemaVersion 3 with name: proof-wall and sets eval: .harness/eval.json but has no validator block. The command validator has a command named setup instead of install, and .harness/prd.md contains a line saying 'E2 must pass: the feed renders'.",
-      "expected_output": "A two-axis report that keeps Wiring and Eval separate, flags the EVALUATE pairing gap (eval without validator.enabled), the missing install command name, and the blind violation from the assertion id leaking into the PRD.",
+      "prompt": "Review this harness spec at specs/wall.md: '# Proof wall. The feed uses React Query with a 10 second staleTime. The post button is disabled until a wallet connects. The feed never shows undefined. Posting increases the account balance by the fee.' harness.yaml is committed.",
+      "expected_output": "A two-axis report keeping Checkability and Scope separate, bucketing each claim, flagging the React Query claim as unjudgeable, and giving rewrites for the disabled-state, negative and delta claims.",
       "files": [],
       "checks": [
         {
-          "name": "has-wiring-axis",
+          "name": "has-checkability-axis",
           "type": "regex",
-          "value": "(##\\s*Wiring|Wiring)",
-          "description": "Report contains a Wiring axis"
+          "value": "##\\s*Checkability",
+          "description": "Report contains a Checkability axis"
         },
         {
-          "name": "has-eval-axis",
+          "name": "has-scope-axis",
           "type": "regex",
-          "value": "(##\\s*Eval|Eval)",
-          "description": "Report contains an Eval axis"
+          "value": "##\\s*Scope",
+          "description": "Report contains a Scope axis"
         },
         {
-          "name": "flags-evaluate-incomplete",
+          "name": "flags-react-query-unjudgeable",
           "type": "regex",
-          "value": "(validator\\.enabled|validator.*not.*(true|enabled)|EVALUATE incomplete|eval without)",
-          "description": "Flags eval present but validator.enabled missing"
+          "value": "(unjudgeable|cannot see (your |the )?code|not observable|from outside)",
+          "description": "Flags the React Query/staleTime claim as unjudgeable, not merely vague"
         },
         {
-          "name": "flags-install-name",
+          "name": "flags-disabled-as-state",
           "type": "regex",
-          "value": "(named \"?install\"?|install.*command|command.*install)",
-          "description": "Flags the command validator missing an install-named command"
+          "value": "(state, not text|reads?\\b|what the (control|button) says|text, not state)",
+          "description": "Flags that a disabled control cannot be read from element text"
         },
         {
-          "name": "flags-blind-leak",
+          "name": "flags-negative-claim",
           "type": "regex",
-          "value": "(blind|assertion id|E2.*PRD|PRD.*E2)",
-          "description": "Flags the assertion id leaking into the PRD"
+          "value": "(negative|no negative expectation|what it does show|positive)",
+          "description": "Flags the never-shows-undefined claim as a negative expectation"
         },
         {
-          "name": "runs-check-script",
+          "name": "flags-delta-claim",
           "type": "regex",
-          "value": "(check-spec\\.sh|doctor --recipe-only)",
-          "description": "Uses the mechanical checker for the Wiring axis"
+          "value": "(delta|before and after|relative|judgement rather than a check|no delta)",
+          "description": "Flags the balance-increase claim as a delta, so judgement rather than a check"
+        },
+        {
+          "name": "offers-rewrites",
+          "type": "regex",
+          "value": "(rewrite|instead|->|→)",
+          "description": "Gives the rewrite, not only the objection"
         }
       ]
     },
     {
       "id": 1,
-      "prompt": "Audit whether this harness recipe is safe to enable chainValidation. The recipe has eval + validator.enabled, chainValidation.enabled true, network: mainnet, and the Playwright smoke asserts twelve pieces of UI copy across six routes.",
-      "expected_output": "Flags mainnet as rejected by the loader, notes that the Playwright stage is too thick and deep UX belongs in the evaluate checklist, and covers both axes.",
+      "prompt": "Review specs/status.md: '# Status page. The /status page shows the network name and the latest consensus timestamp. If the mirror node is down an error is shown.' harness.yaml is present.",
+      "expected_output": "Flags that no element has an id, so claims the author likely wanted as machine checks will fall to judgement, and recommends concrete selectors.",
       "files": [],
       "checks": [
         {
-          "name": "has-both-axes",
+          "name": "flags-missing-element-ids",
           "type": "regex",
-          "value": "(Wiring[\\s\\S]*Eval|Eval[\\s\\S]*Wiring)",
-          "description": "Report keeps both axes"
+          "value": "(element id|selector|no id|#[a-z][a-z0-9-]*)",
+          "description": "Flags the absent element ids"
         },
         {
-          "name": "flags-mainnet",
+          "name": "explains-consequence",
           "type": "regex",
-          "value": "(mainnet|testnet only|must be.*testnet)",
-          "description": "Flags network: mainnet as invalid"
+          "value": "(judgement|judgment|nothing to select|falls? to|cannot select)",
+          "description": "Explains that the claim becomes judgement rather than a check"
         },
         {
-          "name": "mentions-executable-field",
-          "type": "contains",
-          "value": "executableWithTestSigner",
-          "description": "Ties chainValidation to executable assertions"
+          "name": "recommends-concrete-selector",
+          "type": "regex",
+          "value": "#[a-z][a-z0-9-]*",
+          "description": "Recommends a concrete selector"
         },
         {
-          "name": "flags-thick-playwright",
+          "name": "notes-missing-out-of-scope",
           "type": "regex",
-          "value": "(thin|too (thick|much)|belongs in the (evaluate checklist|checklist)|deep UX)",
-          "description": "Flags an over-stuffed Playwright stage"
+          "value": "(out of scope|scope section|not build)",
+          "description": "Notes the spec never says what is out of scope"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "Check this recipe: .harness/spec.yaml still has a skills: list with hedera-consensus-service and create-harness-spec. Also the PRD has three journeys but .harness/eval.json only has one assertion.",
-      "expected_output": "Flags that skills: was removed and hard-fails at load (do not keep the domain skill in the recipe either), and flags that two PRD journeys are ungraded.",
+      "prompt": "Review specs/everything.md — it asks for a mirror-node data layer with caching, then a dashboard UI with four charts, then wallet-gated token transfers with an approval flow, then an admin page. harness.yaml is present and valid.",
+      "expected_output": "Reports the spec as more than one run's work on the Scope axis and recommends splitting it into a sequence of specs run with --continue.",
       "files": [],
       "checks": [
         {
-          "name": "rejects-skills-key",
+          "name": "flags-scope-too-large",
           "type": "regex",
-          "value": "(skills:.*(removed|hard-fail|not listed)|remove skills:)",
-          "description": "Flags that skills: is removed from the recipe"
+          "value": "(more than one run|split|sequence|too (large|big|broad)|one run's work)",
+          "description": "Flags the spec as beyond one run"
         },
         {
-          "name": "rejects-author-skill",
-          "type": "regex",
-          "value": "(create-harness-spec.*(remove|not|authoring)|authoring skill)",
-          "description": "Rejects the authoring skill as a generator skill"
+          "name": "recommends-continue",
+          "type": "contains",
+          "value": "--continue",
+          "description": "Recommends sequencing the specs with --continue"
         },
         {
-          "name": "journey-traceability",
+          "name": "mentions-attempt-budget",
           "type": "regex",
-          "value": "(journey|traceab|ungraded|one assertion|three journeys)",
-          "description": "Flags journeys without checklist coverage"
+          "value": "(--max-attempts|three attempts|3 attempts|attempt budget|repair loop)",
+          "description": "Ties the recommendation to the attempt budget covering the whole spec"
+        },
+        {
+          "name": "keeps-axes-separate",
+          "type": "regex",
+          "value": "##\\s*Scope",
+          "description": "Reports it under Scope rather than merging the axes"
+        },
+        {
+          "name": "no-increments-concept",
+          "type": "regex",
+          "value": "^(?![\\s\\S]*increment)[\\s\\S]*$",
+          "description": "Does not reach for the removed increments concept"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "Review this recipe: .harness/spec.yaml has no schemaVersion, an extend.baseline block, a generator block with cursor CLI args, and logging paths under .harness/runs/.",
-      "expected_output": "Identifies a pre-v3 recipe, stops and recommends rewriting to schemaVersion 3 (migrate is gone), and notes that generator, logging and extend were removed with the agent preset replacing hand-written CLI flags.",
+      "prompt": "Review specs/feature.md. It is a clean markdown spec with ids and loading states. One thing though: it has no schemaVersion field, no PRD file, no evaluate checklist and no validators directory. Is that a problem?",
+      "expected_output": "Says plainly that none of those are findings in harness 3.x, because the recipe model is gone and the two inputs are harness.yaml and the markdown spec.",
       "files": [],
       "checks": [
         {
-          "name": "detects-stale",
+          "name": "says-not-a-problem",
           "type": "regex",
-          "value": "(v1|v2|schemaVersion|older schema|pre-v3|stale)",
-          "description": "Identifies the recipe as pre-v3"
+          "value": "(not a (problem|finding)|no longer|correct|expected|gone|does not (exist|apply))",
+          "description": "States the absences are correct in 3.x rather than reporting them"
         },
         {
-          "name": "no-migrate",
+          "name": "names-the-two-inputs",
           "type": "regex",
-          "value": "(migrate is gone|no migrate|rewrite|init)",
-          "description": "Does not treat migrate as the upgrade path"
+          "value": "harness\\.yaml[\\s\\S]{0,200}spec",
+          "description": "Names harness.yaml and the markdown spec as the only inputs"
         },
         {
-          "name": "names-removed-keys",
+          "name": "explains-recipe-model-removed",
           "type": "regex",
-          "value": "(generator|logging|extend)",
-          "description": "Names keys removed from the current schema"
+          "value": "(recipe model|harness 3|3\\.x|removed|no recipe)",
+          "description": "Explains that the recipe model was removed"
         },
         {
-          "name": "mentions-agent-preset",
+          "name": "does-not-demand-schema-version",
           "type": "regex",
-          "value": "(agent:|agent preset|preset)",
-          "description": "Explains that the agent preset replaces hand-written CLI flags"
+          "value": "^(?![\\s\\S]*(add|set|missing|needs?)\\s+schemaVersion)[\\s\\S]*$",
+          "description": "Does not ask for a schemaVersion field to be added"
         }
       ]
     },
     {
       "id": 4,
-      "prompt": "Review this recipe: schemaVersion 3, baseline with install, and it also sets maxAttempts: 3, prd: .harness/prd.md, validators.static: .harness/validators/static.json, and constraints.packageManager: yarn@3.2.3 which matches the project lockfile. Anything wrong?",
-      "expected_output": "Confirms the recipe is valid and runnable, but notes it is padded: every one of those keys restates a v3 default or a detected value, adding drift surface for no benefit. Recommends removing them.",
+      "prompt": "Review specs/send.md: '# Send HBAR. Once the send completes the transaction id appears in #tx-id. The new topic created by the app reaches sequence number 1. /send returns 200.' harness.yaml exists but has no serve command.",
+      "expected_output": "Flags the conditional claim and the claim anchored to an entity the run creates, confirms the route check is sound, and reports the missing serve command as a blocker.",
       "files": [],
       "checks": [
         {
-          "name": "confirms-valid",
+          "name": "flags-conditional-claim",
           "type": "regex",
-          "value": "(valid|runnable|will run|nothing broken|no blocker)",
-          "description": "Recognizes the recipe is not broken"
+          "value": "(conditional|which moment|always held|a moment)",
+          "description": "Flags the once-completes claim as conditional"
         },
         {
-          "name": "flags-padding",
+          "name": "flags-entity-created-by-run",
           "type": "regex",
-          "value": "(default|redundant|padding|restate|unnecessary|drift)",
-          "description": "Flags keys that merely restate v3 defaults"
+          "value": "(does not exist|not exist yet|the run creates|will (make|create)|created by the app)",
+          "description": "Flags the claim anchored to a topic the run creates"
         },
         {
-          "name": "names-defaulted-keys",
+          "name": "accepts-route-check",
           "type": "regex",
-          "value": "(maxAttempts|prd:|validators\\.static|packageManager)",
-          "description": "Names which keys are defaulted or detected"
+          "value": "(200|http)",
+          "description": "Recognises the route status claim as a sound check"
         },
         {
-          "name": "recommends-removal",
+          "name": "flags-missing-serve",
           "type": "regex",
-          "value": "(remove|drop|delete|omit)",
-          "description": "Recommends removing the redundant keys"
+          "value": "serve",
+          "description": "Reports the missing serve command"
+        },
+        {
+          "name": "serve-is-blocker",
+          "type": "regex",
+          "value": "(Blocker|blocker|required|cannot start)",
+          "description": "Treats the missing serve command as a blocker, since it is required"
         }
       ]
     }

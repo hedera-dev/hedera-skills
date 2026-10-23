@@ -207,23 +207,25 @@ Two skills for Hedera hackathon participants: project planning and submission va
 
 ### hedera-harness
 
-Three skills for creating and reviewing [hedera-harness](https://github.com/hedera-dev/hedera-harness) recipes — the PRD, recipe file, validators, Playwright smoke, and evaluate checklist that drive in-place Scaffold HBAR feature work. Schema v3. Works in Claude Code (marketplace plugin) and Cursor / other skill-capable agents.
+Three skills for writing and reviewing [hedera-harness](https://github.com/hedera-dev/hedera-harness) specs — the markdown feature description that `harness run` builds and judges. Targets **harness 3.x**. Works in Claude Code (marketplace plugin) and Cursor / other skill-capable agents.
+
+Harness 3 takes two inputs: `harness.yaml` at the repo root (four commands — `install`, `build`, `test`, `serve`) and a markdown spec at `specs/<name>.md`. One rule decides whether a run can pass: anything the spec asserts has to be checkable by a person using the running app, because a second agent that is never allowed to see the code is what judges it.
 
 **Skills included:**
 
-- **harness-spec-anatomy** — Shared vocabulary (recipe / slug / blind / evaluate checklist / stage / needle). Single source of truth for file layout and the mechanical `check-spec.sh` script.
-- **create-harness-spec** — Grills a product idea one question at a time, then emits an ASSERT recipe (optional SMOKE / EVALUATE / CHAIN). Prefers Matt Pocock `/grilling` when available; Claude Code uses the inline protocol.
-- **review-harness-spec** — Two-axis audit (Wiring via `check-spec.sh` + Eval judgment) before a run.
+- **harness-spec-anatomy** — Shared vocabulary (spec / check / judgement / verdict / evidence / attempt / baseline). Single source of truth for `harness.yaml`, the five stages, and which claims become machine checks.
+- **create-harness-spec** — Routes to `harness wizard` when there is no idea yet; otherwise grills one question at a time for the things users skip — element ids, loading states, failure states, out of scope — then writes `specs/<name>.md`. Prefers Matt Pocock `/grilling` when available; Claude Code uses the inline protocol.
+- **review-harness-spec** — Two-axis audit before a run: **Checkability** (every claim bucketed check / judgement / unjudgeable, with rewrites) and **Scope**.
 
 **Use when:**
 
-- Turning a Hedera feature idea into hedera-harness inputs
-- Writing a harness PRD, recipe file, or evaluate checklist
-- Reviewing a harness recipe before `hedera-harness run`
-- Deciding which validation stages to enable and in what order
-- Splitting a feature into ordered `prd:` / `eval:` increments
+- Turning a Hedera feature idea into a spec `harness run` can build
+- Phrasing a claim so the judge can actually settle it
+- Reviewing a spec before `harness run --spec <path>`
+- Deciding whether a feature is one run or a sequence stacked with `--continue`
+- Moving a project off the pre-3.x recipe model
 
-**Important:** These are **authoring** skills. Recipes do not list skills — product plugins are discovered per run and the generator picks. Keep authoring skills as marketplace plugins.
+**Important:** These are **authoring** skills. A spec never lists skills — a run loads what the project carries in `.claude/skills/`, which is what `npx skills add` writes.
 
 ### dev-intelligence
 
@@ -321,7 +323,6 @@ hedera-skills/
 │   │       ├── harness-spec-anatomy/
 │   │       │   ├── SKILL.md
 │   │       │   ├── GLOSSARY.md
-│   │       │   ├── scripts/
 │   │       │   └── references/
 │   │       ├── create-harness-spec/
 │   │       │   ├── SKILL.md

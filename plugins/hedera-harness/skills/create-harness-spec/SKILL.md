@@ -1,121 +1,146 @@
 ---
 name: create-harness-spec
-description: Create a hedera-harness recipe — PRD, recipe file, validators, and optional stages — by grilling an idea into a runnable feature spec. Use when the user wants to turn a Hedera feature idea into harness inputs.
+description: Write a hedera-harness spec — a markdown feature description whose every claim is checkable from outside the app. Use when the user wants to turn a Hedera feature idea into something `harness run` can build and judge.
 ---
 
 # Create Harness Spec
 
-Grill a Hedera feature idea into a complete **recipe** for
-[hedera-harness](https://github.com/hedera-dev/hedera-harness).
+Turn a Hedera feature idea into a **spec**
+[hedera-harness](https://github.com/hedera-dev/hedera-harness) can build and
+judge: one markdown file at `specs/<name>.md`.
 
 Load the shared vocabulary first: read
 [`../harness-spec-anatomy/SKILL.md`](../harness-spec-anatomy/SKILL.md) and its
 [GLOSSARY.md](../harness-spec-anatomy/GLOSSARY.md). Use those terms exactly.
 
-Targets **hedera-harness schemaVersion 3**.
+Targets **hedera-harness 3.x**. A project still holding a `.harness/spec.yaml`
+is on the old recipe model; harness 3.x ignores that file. Say so rather than
+editing it, and write the two v3 inputs instead.
 
-These skills are for authoring. Recipes do not list skills — product plugins
-from `hedera-skills` are discovered per run and the generator picks. Keep the
-run **blind**: the PRD carries journeys and outcomes; numbered assertions live
-in the **evaluate checklist**.
+Everything here is authoring. A spec never lists skills — a run loads what the
+project carries in `.claude/skills/`.
 
-Works in **Claude Code** (marketplace plugin) and Cursor / other agents that
-load SKILL.md. Prefer `/grilling` when that skill is installed; otherwise use
-the inline protocol — Claude Code typically takes the inline path.
+## Step 1: Decide whether to write it at all
 
-## Step 1: Locate the target
+The harness ships an interviewer. Check before doing this by hand:
 
-A recipe lives at `.harness/` inside a scaffolded app. There is no other layout.
+| Situation | Do this |
+| --- | --- |
+| The user has no clear idea yet, and the harness is installed | `harness wizard <name>` — an agent reads the project, proposes the four commands with reasoning, then interviews one question at a time and drafts `specs/<name>.md`. Then review it with `/review-harness-spec` |
+| The user knows what they want, or wants the spec in this conversation | Carry on here |
+| The harness is not installed | Carry on here, and say that `harness run` needs `npm install -g hedera-harness` |
 
-| Situation | What to do |
-|-----------|------------|
-| Cwd is a scaffolded app (Scaffold HBAR or `hedera-harness init`) | Author into its `.harness/` |
-| Cwd is an app without `.harness/` | `hedera-harness init` adopts the harness in place |
-| No app yet | `hedera-harness init <dir>` (optionally `--template <name>`) |
-| Cwd already has `.harness/spec.yaml` | Check `schemaVersion`. If absent, `1`, or `2`, rewrite to v3 (or regenerate with `init` and reapply edits). `hedera-harness migrate` is gone. |
+Recommending the wizard is not a failure to help — it reads the project, which
+you may not have, and its draft is the better starting point. Offer it, take
+the user's answer, and move on.
 
-Never treat a v1/v2 recipe as loadable. `contract:` → `eval:`, drop `skills:`,
-set `schemaVersion: 3`.
+## Step 2: Confirm the project can be run
 
-Paths in the **recipe file** are relative to the project root.
+A spec is worthless without the config beside it. Check the repo root for
+`harness.yaml`:
 
-## Step 2: Grill
+| State | Do this |
+| --- | --- |
+| Present | Read it. The four commands tell you the real routes and build setup, which the spec should name |
+| Absent | Tell the user to run `harness init` (four questions) or `harness wizard`. Do not hand-write `harness.yaml` — `init` reads the lockfile and manifest and commits it |
+| Present but `test:` is `null` | Fine. A repo with no tests is a fact |
 
-Follow [references/grilling.md](references/grilling.md). Prefer `/grilling` if
-available; otherwise use the inline protocol there.
+Also confirm the tree is clean and there is a `package.json` at the root —
+DOCTOR refuses otherwise, and that is cheaper to say now than to discover on
+the first run.
 
-Do **not** write files until the user confirms shared understanding.
+## Step 3: Grill the idea into checkable claims
 
-## Step 3: Emit the recipe
+Follow [references/grilling.md](references/grilling.md). Prefer the `/grilling`
+skill when it is installed; otherwise use the inline protocol there.
 
-Prefer copying the shipped skeleton — it is always current:
+The whole purpose is the detail the user has not thought to give yet: which
+element shows the value, what appears while it is loading, what happens when it
+fails, what is deliberately out of scope.
 
-```bash
-cp -r "$(npm root -g)/hedera-harness/skeletons/project-harness/." .harness/
+**Do not write the file until the user confirms shared understanding.**
+
+**Done when** you can state every claim the feature makes, and for each one say
+whether a person using the app could check it without reading the code.
+
+## Step 4: Write `specs/<name>.md`
+
+Markdown, in the user's words, naming this project's real routes and
+directories. A shape that works:
+
+```markdown
+# Network status page
+
+The page at `/status` shows which Hedera network the app is pointed at.
+
+## What a user sees
+- the network name, in an element with id `network-name`
+- the latest consensus timestamp, fetched live from the mirror node
+
+## Behaviour
+- while the request is in flight the page shows a loading state, not `undefined`
+- if the mirror node is unreachable, a readable error appears in `#status-error`
+
+## Constraints
+- read-only; no transaction, no operator key
 ```
 
-Then:
+Four things decide whether the spec works:
 
-1. Write `.harness/prd.md` (or one file per **increment** under
-   `.harness/prds/`) from the grill. Product-facing only — keep the run **blind**.
-2. Fill `.harness/spec.yaml`. Required: `schemaVersion: 3`, `name`,
-   `description`, and `baseline` with a command literally named `install`.
-   **Leave every default commented out.** A four-key recipe is complete.
-   Omit `agent:` unless the user wants Cursor (default is Claude).
-3. Write `.harness/validators/static.json` and `.harness/validators/yarn.json`
-   against the feature deliverables. Do not assert on `template.json` —
-   create-scaffold-hbar removes it when scaffolding.
-4. Do **not** add a `skills:` list. Mention relevant Hedera services in the PRD
-   so the generator can pick product skills.
-5. Add SMOKE / EVALUATE / CHAIN only if the user opted in during the grill —
-   see `harness-spec-anatomy` → [references/stage-strategy.md](../harness-spec-anatomy/references/stage-strategy.md).
-   If `prd:` is a list and EVALUATE is on, write a matching `eval:` list.
-6. Install the SMOKE host package if you just enabled it — at the **project
-   root**, not only inside a workspace. Doctor imports `playwright` from next
-   to `hedera-harness`, and Yarn `nmHoistingLimits: workspaces` hides
-   `packages/nextjs` installs.
-   - SMOKE → `yarn add -D playwright` (or npm/pnpm equivalent)
-   Skip the add if the root `package.json` already lists it. Do this as part
-   of emit, not as a follow-up after `doctor` fails.
-   CHAIN does **not** need a project install: `@hiero-ledger/sdk` ships with
-   `hedera-harness`. Only the operator env vars are host-provided.
+1. **Every assertion is checkable by a person using the running app.** A second
+   agent that cannot see the code is what judges it. "The hook polls every 10
+   seconds" is not checkable; "the number updates without a page reload,
+   roughly every 10 seconds" is.
+2. **Name real element ids and routes.** `#network-name`, `/status`. "An
+   element showing the network" gives DERIVE nothing to select, so the claim
+   falls to judgement when you wanted a check.
+3. **One claim per bullet.** A sentence carrying two claims produces a check
+   whose quoted origin only half explains it.
+4. **Say what is out of scope.** It is the cheapest way to stop the generator
+   inventing work the judge will then fail.
 
-Reconstruct bodies by hand only when the skeleton is unavailable:
-`harness-spec-anatomy` → [references/spec-files.md](../harness-spec-anatomy/references/spec-files.md).
+Which phrasings become machine checks and which stay judgement:
+[`../harness-spec-anatomy/references/checkable-claims.md`](../harness-spec-anatomy/references/checkable-claims.md).
+Read it before writing the bullets, not after.
 
-## Step 4: Completion criterion
+Mark anything you had to guess with an obvious placeholder. An unmarked guess
+is the one failure mode the user cannot see.
 
-Two checks, in order:
+## Step 5: Completion criterion
+
+There is no schema to validate — a spec is prose. Two real checks instead:
 
 ```bash
-# 1. Does the recipe load? (authoritative — schema, defaults, baseline, network)
-hedera-harness doctor .harness/spec.yaml --recipe-only
+# 1. Do the derived checks match what you meant? Stops before anything is built.
+harness run --spec specs/<name>.md --review
 
-# 2. Is it coherent across files? (traceability, stage pairing, blind rule)
-bash <path-to>/harness-spec-anatomy/scripts/check-spec.sh <project-root>
+# 2. Does the spec hold up as prose?
+#    /review-harness-spec
 ```
 
-`check-spec.sh` runs `doctor` itself, so running it alone is enough when the
-harness CLI is installed. If it reports that the schema was **not** validated,
-that is a partial result — install or upgrade the harness and rerun.
+`--review` prints each check with the phrase it came from. Read the quote
+against your sentence: a check you did not intend means the sentence reads more
+precisely than you meant, and a claim you expected to see missing means it
+needs interpretation.
 
-**Done when `check-spec.sh` exits clean.**
+**Done when** `--review` shows checks whose quoted origins you recognise, and
+every placeholder is resolved.
 
-Then hand off:
+## Step 6: Handoff
 
 ```bash
-# Prefer /review-harness-spec next, then:
-hedera-harness run .harness/spec.yaml --max-attempts 3
-# or: yarn harness:run
+harness run --spec specs/<name>.md                  # default 3 attempts
+harness run --spec specs/<name>.md --max-attempts 5
+harness report                                      # read the finished run
 ```
 
-Point at the harness README for install, agent auth, and stage host
-prerequisites. `hedera-harness doctor` (without `--recipe-only`) checks those.
-Do not expand CLI teaching beyond these next commands.
+A second feature stacks on the first with `--continue`, which branches from the
+passing run's work rather than from yours.
 
 ## Additional resources
 
 - [references/grilling.md](references/grilling.md)
+- Vocabulary: [`../harness-spec-anatomy/SKILL.md`](../harness-spec-anatomy/SKILL.md)
+- Phrasing: [`../harness-spec-anatomy/references/checkable-claims.md`](../harness-spec-anatomy/references/checkable-claims.md)
+- CLI and environment: [`../harness-spec-anatomy/references/cli.md`](../harness-spec-anatomy/references/cli.md)
 - Companion: `/review-harness-spec`
-- Vocabulary: `/harness-spec-anatomy`
-- Upstream: [docs/authoring-a-recipe.md](https://github.com/hedera-dev/hedera-harness/blob/dev/docs/authoring-a-recipe.md)

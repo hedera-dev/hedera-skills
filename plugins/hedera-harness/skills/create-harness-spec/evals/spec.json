@@ -3,15 +3,15 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "I already scaffolded a Scaffold HBAR app (packages/nextjs present, yarn workspaces). Help me create an ASSERT-only hedera-harness recipe under .harness/ for an HCS proof-wall feature called proof-wall: users browse a public message wall without a wallet, and posting requires connecting a wallet. No Solidity.",
-      "expected_output": "A grilling session that asks one question at a time with a recommended answer, looks up project facts instead of asking, waits for shared understanding before writing files, then emits a minimal schemaVersion 3 recipe at .harness/spec.yaml with a baseline install command, plus .harness/prd.md and validators, leaving v3 defaults commented out and omitting skills:.",
+      "prompt": "I already scaffolded a Scaffold HBAR app (packages/nextjs present, yarn workspaces) and harness.yaml is committed. Help me create a hedera-harness spec for an HCS proof-wall feature called proof-wall: users browse a public message wall without a wallet, and posting requires connecting a wallet. No Solidity.",
+      "expected_output": "A grilling session that asks one question at a time with a recommended answer, looks up project facts instead of asking, pushes for element ids and loading/failure states, waits for shared understanding, then writes a markdown spec to specs/proof-wall.md and hands off with harness run --spec.",
       "files": [],
       "checks": [
         {
           "name": "one-question-at-a-time",
           "type": "regex",
           "value": "(one question|one at a time|Ask.*one|waiting for|recommended answer)",
-          "description": "Follows grilling protocol: one question at a time / recommended answer"
+          "description": "Follows the grilling protocol: one question at a time with a recommendation"
         },
         {
           "name": "waits-for-shared-understanding",
@@ -20,216 +20,180 @@
           "description": "Does not write files until shared understanding is confirmed"
         },
         {
-          "name": "sets-schema-version",
+          "name": "writes-markdown-spec-path",
+          "type": "regex",
+          "value": "specs/[a-z0-9-]+\\.md",
+          "description": "Writes the spec as markdown under specs/"
+        },
+        {
+          "name": "asks-for-element-ids",
+          "type": "regex",
+          "value": "(element id|#[a-z][a-z0-9-]*|selector)",
+          "description": "Pushes for concrete element ids so claims become machine checks"
+        },
+        {
+          "name": "covers-loading-or-failure-state",
+          "type": "regex",
+          "value": "(loading|in flight|while the request|fails|unreachable|error state)",
+          "description": "Asks what shows while loading and when the request fails"
+        },
+        {
+          "name": "hands-off-with-run-spec",
           "type": "contains",
-          "value": "schemaVersion: 3",
-          "description": "Recipe declares schemaVersion 3"
+          "value": "harness run --spec",
+          "description": "Hands off with the v3 run command"
         },
         {
-          "name": "emits-harness-dir-paths",
-          "type": "contains",
-          "value": ".harness/spec.yaml",
-          "description": "Writes the recipe to the project-centric .harness/ path"
-        },
-        {
-          "name": "requires-baseline-install",
+          "name": "no-recipe-schema-version",
           "type": "regex",
-          "value": "baseline[\\s\\S]{0,200}name:\\s*install",
-          "description": "Baseline includes a command literally named install"
+          "value": "^(?![\\s\\S]*schemaVersion:\\s*3)[\\s\\S]*$",
+          "description": "Does not emit a schemaVersion recipe field, which harness 3.x does not read"
         },
         {
-          "name": "keeps-recipe-minimal",
+          "name": "no-recipe-yaml-path",
           "type": "regex",
-          "value": "(default|commented|omit|leave.*out|already the default)",
-          "description": "Leaves v3-defaulted plumbing out of the recipe rather than restating it"
+          "value": "^(?![\\s\\S]*\\.harness/spec\\.yaml)[\\s\\S]*$",
+          "description": "Does not write the removed .harness/spec.yaml recipe file"
         },
         {
-          "name": "no-removed-keys",
+          "name": "no-prd-file",
           "type": "regex",
-          "value": "^(?!.*\\b(seed:|generator:|logging:|extend:|contract:|skills:))",
-          "description": "Does not emit keys removed in schema v3 (seed, generator, logging, extend, contract, skills)"
-        },
-        {
-          "name": "mentions-hcs-without-skills-key",
-          "type": "regex",
-          "value": "(hedera-consensus-service|HCS|product plugins?|generator picks)",
-          "description": "Names HCS / product skill discovery without listing skills: in the recipe"
-        },
-        {
-          "name": "keeps-run-blind",
-          "type": "regex",
-          "value": "(blind|evaluate checklist|PRD.*(journey|product)|journeys and outcomes)",
-          "description": "Keeps the run blind / separates PRD from evaluate checklist"
-        },
-        {
-          "name": "completion-criterion",
-          "type": "regex",
-          "value": "(check-spec\\.sh|doctor --recipe-only|hedera-harness doctor)",
-          "description": "Names doctor and/or check-spec.sh as the completion criterion"
+          "value": "^(?![\\s\\S]*\\.harness/prd\\.md)[\\s\\S]*$",
+          "description": "Does not write a PRD, which harness 3.x has no concept of"
         }
       ]
     },
     {
       "id": 1,
-      "prompt": "Deepen my existing proof-wall harness recipe to EVALUATE. Derive evaluate-checklist assertions from the PRD journeys (browse without wallet; wallet-gated post).",
-      "expected_output": "An evaluate checklist at .harness/eval.json with numbered E-prefixed assertions carrying statement and howToVerify, a fail-closed evaluationRules posture, both eval and validator.enabled set in the recipe, and a reminder that the PRD must stay blind.",
+      "prompt": "I want to use hedera-harness on my Next.js Hedera app but I honestly do not know what feature to build first or how to describe it. Where do I start?",
+      "expected_output": "Routes the user to harness wizard, which reads the project, proposes the four commands and interviews them into a spec, rather than grilling them from scratch in the conversation.",
       "files": [],
       "checks": [
         {
-          "name": "uses-assertion-ids",
-          "type": "regex",
-          "value": "\"?E1\"?",
-          "description": "Uses stable numbered assertion ids (E1, E2, ...)"
-        },
-        {
-          "name": "includes-howto-verify",
+          "name": "recommends-wizard",
           "type": "contains",
-          "value": "howToVerify",
-          "description": "Assertions carry concrete browser verification steps"
+          "value": "harness wizard",
+          "description": "Routes to the built-in interviewer instead of hand-grilling"
         },
         {
-          "name": "pairs-eval-and-validator",
+          "name": "explains-wizard-reads-project",
           "type": "regex",
-          "value": "validator[\\s\\S]{0,80}enabled:\\s*true",
-          "description": "Enables both eval and validator.enabled — either alone is misconfigured"
+          "value": "(reads? the project|interview|one question|drafts?)",
+          "description": "Says what the wizard does: reads the project and interviews"
         },
         {
-          "name": "default-eval-path",
-          "type": "contains",
-          "value": ".harness/eval.json",
-          "description": "Uses the v3 default evaluate checklist path"
-        },
-        {
-          "name": "fail-closed-rules",
+          "name": "mentions-review-after",
           "type": "regex",
-          "value": "(failOnUncertainty|adversarial|absence of evidence)",
-          "description": "Evaluate checklist keeps a fail-closed posture"
-        },
-        {
-          "name": "blind-integrity-reminder",
-          "type": "regex",
-          "value": "(blind|do not (paste|copy).*(PRD|assertion)|keep.*PRD.*product)",
-          "description": "Reminds the user not to leak checklist detail into the PRD"
-        },
-        {
-          "name": "no-hand-written-agent-flags",
-          "type": "regex",
-          "value": "^(?!.*(--sandbox|composer-2\\.5|stream-partial-output|approve-mcps))",
-          "description": "Does not hand-write validator CLI flags or model names; the agent preset owns those"
+          "value": "(review|/review-harness-spec|--review)",
+          "description": "Suggests reviewing the drafted spec afterwards"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "When should I enable chainValidation for my harness recipe, and what YAML fields do I need?",
-      "expected_output": "Explains that CHAIN is opt-in and requires EVALUATE, that network must be testnet, that an ECDSA operator is supplied through environment variables, and that assertions must be flagged executableWithTestSigner to actually transact.",
+      "prompt": "My project has a .harness/spec.yaml with schemaVersion 3, a prd.md and validators/static.json from when we used hedera-harness 1.2. I just upgraded to harness 3.0.1. Migrate my recipe to the new version.",
+      "expected_output": "Explains that harness 3.x does not read the recipe at all so there is nothing to migrate mechanically, and that the two v3 inputs are harness.yaml (written by init or wizard) and a markdown spec.",
       "files": [],
       "checks": [
         {
-          "name": "mentions-chain-validation",
+          "name": "says-recipe-is-ignored",
+          "type": "regex",
+          "value": "(ignore[sd]?|does not read|no longer read|not read at all|nothing to migrate)",
+          "description": "States that harness 3.x ignores the old recipe rather than migrating it"
+        },
+        {
+          "name": "names-harness-yaml",
           "type": "contains",
-          "value": "chainValidation",
-          "description": "Names the chainValidation block"
+          "value": "harness.yaml",
+          "description": "Names the v3 config file"
         },
         {
-          "name": "requires-testnet",
+          "name": "names-the-four-commands",
           "type": "regex",
-          "value": "(testnet|mainnet is (rejected|not allowed))",
-          "description": "States the network must be testnet"
+          "value": "install[\\s\\S]{0,120}build[\\s\\S]{0,120}serve",
+          "description": "Names the four commands harness.yaml carries"
         },
         {
-          "name": "mentions-operator-env",
+          "name": "recommends-init-not-handwriting",
           "type": "regex",
-          "value": "(HEDERA_OPERATOR_ID|HEDERA_OPERATOR_KEY|accountIdEnv|privateKeyEnv)",
-          "description": "Operator credentials come from environment variables"
+          "value": "(harness init|harness wizard)",
+          "description": "Has init or wizard write harness.yaml rather than hand-writing it"
         },
         {
-          "name": "requires-ecdsa",
+          "name": "no-migrate-command",
           "type": "regex",
-          "value": "(ECDSA|ED25519)",
-          "description": "Calls out that the operator must be ECDSA, not ED25519"
-        },
-        {
-          "name": "ties-to-executable-flag",
-          "type": "contains",
-          "value": "executableWithTestSigner",
-          "description": "Links chainValidation to executableWithTestSigner assertions"
-        },
-        {
-          "name": "requires-evaluate",
-          "type": "regex",
-          "value": "(requires EVALUATE|eval:|evaluate checklist)",
-          "description": "States that CHAIN depends on EVALUATE"
+          "value": "^(?![\\s\\S]*harness(-| )?migrate)[\\s\\S]*$",
+          "description": "Does not invent a migrate command"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "My .harness/spec.yaml has an extend.baseline block, a contract: key, and no schemaVersion. I want to add a new page to the recipe — can you edit it for me?",
-      "expected_output": "Recognizes a pre-v3 recipe, declines to treat it as loadable, explains that hedera-harness migrate is gone, and recommends rewriting to schemaVersion 3 (extend.baseline → baseline, contract: → eval:) or regenerating with init.",
+      "prompt": "Write me a harness spec for a balance widget. Requirements: the hook polls the mirror node every 10 seconds, the component is memoised so it never re-renders unnecessarily, and the balance never shows undefined.",
+      "expected_output": "Converts each unobservable claim into something a judge that cannot see the code could check: an update cadence observed in the browser, and what the element actually displays instead of a negative claim.",
       "files": [],
       "checks": [
         {
-          "name": "detects-stale-schema",
+          "name": "flags-unobservable-claims",
           "type": "regex",
-          "value": "(v1|v2|schemaVersion|older schema|pre-v3|stale)",
-          "description": "Identifies the recipe as predating schema v3"
+          "value": "(cannot see (your |the )?code|not checkable|from outside|unjudgeable|observable)",
+          "description": "Identifies that implementation claims cannot be judged"
         },
         {
-          "name": "no-migrate-command",
+          "name": "rewrites-polling-claim",
           "type": "regex",
-          "value": "(migrate is gone|no migrate|rewrite|init)",
-          "description": "Does not recommend the removed migrate command as the path forward"
+          "value": "(without a page reload|updates.*(10|ten)|roughly every)",
+          "description": "Converts the polling claim into an observable update cadence"
         },
         {
-          "name": "names-key-renames",
+          "name": "rewrites-negative-claim",
           "type": "regex",
-          "value": "(extend\\.baseline|baseline).*(eval:|contract)",
-          "description": "Explains extend.baseline → baseline and contract → eval"
+          "value": "(what the element (does )?show|positive|instead of.*undefined|shows a loading)",
+          "description": "Replaces the never-shows-undefined claim with what the element does show"
+        },
+        {
+          "name": "drops-or-reframes-memoisation",
+          "type": "regex",
+          "value": "(memois|memoiz)",
+          "description": "Addresses the memoisation claim rather than silently passing it through"
+        },
+        {
+          "name": "names-an-element-id",
+          "type": "regex",
+          "value": "#[a-z][a-z0-9-]*",
+          "description": "Gives the displayed value a concrete element id"
         }
       ]
     },
     {
       "id": 4,
-      "prompt": "I want the harness to build a whole HTS subscription feature: the token service layer, a management UI, and wallet-gated mint flows. Should that be one PRD or several?",
-      "expected_output": "Weighs a single PRD against ordered increments, recommends splitting only because this spans layers, explains that prd accepts a list delivered in order onto one branch, that each increment must leave the app green, and that eval: should be listed 1:1 with prd: so each slice is graded against its own checklist.",
+      "prompt": "Here is my feature idea for harness: a /status page showing the network name in #network-name. My repo has no harness.yaml yet. Write the spec and whatever config is needed.",
+      "expected_output": "Writes the markdown spec but has harness init or wizard produce harness.yaml rather than hand-writing it, and notes the clean-tree and package.json requirements DOCTOR enforces.",
       "files": [],
       "checks": [
         {
-          "name": "explains-increments",
+          "name": "defers-config-to-init",
           "type": "regex",
-          "value": "(increment|ordered list|prd:\\s*$|list of PRDs)",
-          "description": "Explains that prd can be an ordered list of increments"
+          "value": "harness (init|wizard)",
+          "description": "Has init or wizard write harness.yaml"
         },
         {
-          "name": "each-increment-green",
+          "name": "explains-why-not-handwritten",
           "type": "regex",
-          "value": "(green|passes on its own|own attempt budget|validated per increment)",
-          "description": "Each increment must leave the app green on its own"
+          "value": "(lockfile|package\\.json|detect|commits? it|reads the)",
+          "description": "Says why init should write it: it reads the project and commits the file"
         },
         {
-          "name": "stops-on-failure",
+          "name": "writes-spec-file",
           "type": "regex",
-          "value": "(stops|halts|first fail|subsequent increments)",
-          "description": "A failing increment stops the sequence"
+          "value": "specs/[a-z0-9-]+\\.md",
+          "description": "Still writes the markdown spec"
         },
         {
-          "name": "orders-by-dependency",
+          "name": "mentions-doctor-preconditions",
           "type": "regex",
-          "value": "(depend|foundation|layer|order)",
-          "description": "Orders increments by dependency, not size"
-        },
-        {
-          "name": "single-branch",
-          "type": "regex",
-          "value": "(one branch|single branch|same branch)",
-          "description": "Increments deliver onto a single branch"
-        },
-        {
-          "name": "pairs-eval-list",
-          "type": "regex",
-          "value": "(eval:.*1:1|1:1.*eval|evals/)",
-          "description": "Pairs eval: 1:1 with prd: for per-increment grading"
+          "value": "(clean tree|uncommitted|package\\.json at the root|DOCTOR)",
+          "description": "Flags the preconditions DOCTOR enforces before a run"
         }
       ]
     }
